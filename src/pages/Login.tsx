@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,18 +13,32 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signIn(email, password);
-    setLoading(false);
-    if (error) {
-      toast.error("Login failed: " + error.message);
+
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({ email, password });
+      setLoading(false);
+      if (error) {
+        toast.error("Signup failed: " + error.message);
+      } else {
+        toast.success("Account created! Logging you in...");
+        const { error: loginErr } = await signIn(email, password);
+        if (!loginErr) navigate("/dashboard");
+      }
     } else {
-      navigate("/dashboard");
+      const { error } = await signIn(email, password);
+      setLoading(false);
+      if (error) {
+        toast.error("Login failed: " + error.message);
+      } else {
+        navigate("/dashboard");
+      }
     }
   };
 
@@ -35,7 +50,7 @@ export default function Login() {
             <Truck className="w-8 h-8 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold">Heavy Vehicle Parking</CardTitle>
-          <CardDescription>Sign in to manage your facility</CardDescription>
+          <CardDescription>{isSignUp ? "Create your admin account" : "Sign in to manage your facility"}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -45,12 +60,21 @@ export default function Login() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" minLength={6} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Login as Admin"}
+              {loading ? "Please wait..." : isSignUp ? "Create Account" : "Login as Admin"}
             </Button>
           </form>
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-sm text-primary hover:underline"
+            >
+              {isSignUp ? "Already have an account? Sign in" : "First time? Create admin account"}
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
