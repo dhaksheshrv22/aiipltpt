@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { formatINR, formatDateTime, formatDuration } from "@/utils/pricing";
-import { Printer, X } from "lucide-react";
+import { connectPrinter, isPrinterConnected, printExitReceipt } from "@/utils/bluetoothPrinter";
+import { toast } from "sonner";
+import { Printer, X, Bluetooth } from "lucide-react";
 
 interface ReceiptModalProps {
   receipt: any;
@@ -9,7 +12,36 @@ interface ReceiptModalProps {
 }
 
 export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
-  const handlePrint = () => window.print();
+  const [printing, setPrinting] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+
+  const handleBrowserPrint = () => window.print();
+
+  const handleConnect = async () => {
+    setConnecting(true);
+    try {
+      await connectPrinter();
+      toast.success("Printer connected!");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setConnecting(false);
+  };
+
+  const handleBluetoothPrint = async () => {
+    if (!isPrinterConnected()) {
+      toast.error("Please connect a Bluetooth printer first");
+      return;
+    }
+    setPrinting(true);
+    try {
+      await printExitReceipt(receipt);
+      toast.success("Receipt printed!");
+    } catch (err: any) {
+      toast.error("Print failed: " + err.message);
+    }
+    setPrinting(false);
+  };
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -53,9 +85,30 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
           </div>
         </div>
 
-        <div className="flex gap-2 no-print mt-4">
-          <Button onClick={handlePrint} className="flex-1"><Printer className="w-4 h-4 mr-1" /> Print Receipt</Button>
-          <Button variant="outline" onClick={onClose}><X className="w-4 h-4" /></Button>
+        <div className="flex flex-col gap-2 no-print mt-4">
+          <Button
+            variant={isPrinterConnected() ? "outline" : "default"}
+            onClick={handleConnect}
+            disabled={connecting || isPrinterConnected()}
+            className="w-full"
+          >
+            <Bluetooth className="w-4 h-4 mr-2" />
+            {isPrinterConnected() ? "Printer Connected" : connecting ? "Connecting..." : "Connect Bluetooth Printer"}
+          </Button>
+
+          <Button onClick={handleBluetoothPrint} disabled={printing || !isPrinterConnected()} className="w-full">
+            <Printer className="w-4 h-4 mr-2" />
+            {printing ? "Printing..." : "Print via Bluetooth"}
+          </Button>
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleBrowserPrint} className="flex-1">
+              <Printer className="w-4 h-4 mr-1" /> Browser Print
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
