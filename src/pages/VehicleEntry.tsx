@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Truck, Info, AlertCircle } from "lucide-react";
+import EntryTokenModal from "@/components/EntryTokenModal";
 
 export default function VehicleEntry() {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ export default function VehicleEntry() {
   const [advancePaid, setAdvancePaid] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("Due");
   const [notes, setNotes] = useState("");
-
+  const [entryToken, setEntryToken] = useState<any>(null);
   const wheels = parseInt(numWheels) || 0;
   const pricing = wheels > 0 ? getPricingDetails(wheels) : null;
   const isInvalidWheels = wheels > 0 && wheels !== 4 && wheels !== 6 && !(wheels >= 7);
@@ -84,10 +85,31 @@ export default function VehicleEntry() {
 
     toast.success(`Vehicle ${formattedVehicle} registered successfully`);
     setLoading(false);
-    navigate("/active-vehicles");
+
+    setEntryToken({
+      vehicle_number: formattedVehicle,
+      driver_mobile: driverMobile,
+      num_wheels: wheels,
+      pricing_category: pricing.category,
+      daily_rate: pricing.dailyRate,
+      entry_time: vehicle.entry_time,
+      advance_paid: advancePaid,
+      advance_amount: advanceAmount,
+      payment_mode: paymentMode,
+    });
   };
 
   return (
+    <>
+    {entryToken && (
+      <EntryTokenModal
+        vehicle={entryToken}
+        onClose={() => {
+          setEntryToken(null);
+          navigate("/active-vehicles");
+        }}
+      />
+    )}
     <div className="max-w-2xl mx-auto pb-20 md:pb-0">
       <h1 className="text-2xl font-bold mb-6">New Vehicle Entry</h1>
 
@@ -195,5 +217,6 @@ export default function VehicleEntry() {
         </Button>
       </form>
     </div>
+    </>
   );
 }
