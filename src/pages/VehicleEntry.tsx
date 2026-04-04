@@ -24,7 +24,7 @@ export default function VehicleEntry() {
   const [advancePaid, setAdvancePaid] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("Due");
   const [notes, setNotes] = useState("");
-
+  const [entryToken, setEntryToken] = useState<any>(null);
   const wheels = parseInt(numWheels) || 0;
   const pricing = wheels > 0 ? getPricingDetails(wheels) : null;
   const isInvalidWheels = wheels > 0 && wheels !== 4 && wheels !== 6 && !(wheels >= 7);
