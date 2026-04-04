@@ -85,8 +85,18 @@ export default function VehicleEntry() {
 
     toast.success(`Vehicle ${formattedVehicle} registered successfully`);
     setLoading(false);
-    navigate("/active-vehicles");
-  };
+
+    setEntryToken({
+      vehicle_number: formattedVehicle,
+      driver_mobile: driverMobile,
+      num_wheels: wheels,
+      pricing_category: pricing.category,
+      daily_rate: pricing.dailyRate,
+      entry_time: vehicle.entry_time,
+      advance_paid: advancePaid,
+      advance_amount: advanceAmount,
+      payment_mode: paymentMode,
+    });
 
   return (
     <div className="max-w-2xl mx-auto pb-20 md:pb-0">
