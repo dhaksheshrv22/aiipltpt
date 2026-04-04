@@ -37,8 +37,8 @@ const ALT_CHAR_UUIDS = [
   "49535343-8841-43f4-a8d4-ecbe34729bb3",
 ];
 
-let cachedDevice: BluetoothDevice | null = null;
-let cachedCharacteristic: BluetoothRemoteGATTCharacteristic | null = null;
+let cachedDevice: any = null;
+let cachedCharacteristic: any = null;
 
 function textToBytes(text: string): Uint8Array {
   return new TextEncoder().encode(text);
