@@ -94,16 +94,17 @@ async function findWritableCharacteristic(
 }
 
 export async function connectPrinter(): Promise<boolean> {
-  if (!navigator.bluetooth) {
+  if (!(navigator as any).bluetooth) {
     throw new Error("Bluetooth not supported on this device/browser. Use Chrome on Android for best results.");
   }
 
   try {
-    const device = await navigator.bluetooth.requestDevice({
+    const bt = (navigator as any).bluetooth;
+    const device = await bt.requestDevice({
       filters: [{ services: [PRINTER_SERVICE_UUID] }],
       optionalServices: ALT_SERVICE_UUIDS,
     }).catch(() =>
-      navigator.bluetooth.requestDevice({
+      bt.requestDevice({
         acceptAllDevices: true,
         optionalServices: ALT_SERVICE_UUIDS,
       })
