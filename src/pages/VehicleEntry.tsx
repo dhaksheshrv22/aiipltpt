@@ -216,5 +216,6 @@ export default function VehicleEntry() {
         </Button>
       </form>
     </div>
+    </>
   );
 }
