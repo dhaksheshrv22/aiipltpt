@@ -21,7 +21,6 @@ const COMMANDS = {
 };
 
 const PRINTER_SERVICE_UUID = "000018f0-0000-1000-8000-00805f9b34fb";
-const PRINTER_CHAR_UUID = "00002af1-0000-1000-8000-00805f9b34fb";
 
 // Common alternate UUIDs for thermal printers
 const ALT_SERVICE_UUIDS = [

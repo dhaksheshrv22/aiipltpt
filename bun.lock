@@ -35,6 +35,7 @@
         "@radix-ui/react-tooltip": "^1.2.7",
         "@supabase/supabase-js": "^2.101.1",
         "@tanstack/react-query": "^5.83.0",
+        "@types/web-bluetooth": "^0.0.21",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
@@ -444,6 +445,8 @@
     "@types/react-dom": ["@types/react-dom@18.3.7", "", { "peerDependencies": { "@types/react": "^18.0.0" } }, "sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ=="],
 
     "@types/use-sync-external-store": ["@types/use-sync-external-store@0.0.6", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@types/use-sync-external-store/-/use-sync-external-store-0.0.6.tgz", {}, "sha512-zFDAD+tlpf2r4asuHEj0XH6pY6i0g5NeAHPn+15wk3BV6JA69eERFXC1gyGThDkVa1zCyKr5jox1+2LbV/AMLg=="],
+
+    "@types/web-bluetooth": ["@types/web-bluetooth@0.0.21", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@types/web-bluetooth/-/web-bluetooth-0.0.21.tgz", {}, "sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA=="],
 
     "@types/ws": ["@types/ws@8.18.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@types/ws/-/ws-8.18.1.tgz", { "dependencies": { "@types/node": "*" } }, "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg=="],
 
