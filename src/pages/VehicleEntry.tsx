@@ -99,6 +99,16 @@ export default function VehicleEntry() {
     });
 
   return (
+    <>
+    {entryToken && (
+      <EntryTokenModal
+        vehicle={entryToken}
+        onClose={() => {
+          setEntryToken(null);
+          navigate("/active-vehicles");
+        }}
+      />
+    )}
     <div className="max-w-2xl mx-auto pb-20 md:pb-0">
       <h1 className="text-2xl font-bold mb-6">New Vehicle Entry</h1>
 
