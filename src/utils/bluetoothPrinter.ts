@@ -60,8 +60,8 @@ function concatBytes(...arrays: Uint8Array[]): Uint8Array {
 }
 
 async function findWritableCharacteristic(
-  server: BluetoothRemoteGATTServer
-): Promise<BluetoothRemoteGATTCharacteristic | null> {
+  server: any
+): Promise<any> {
   for (const serviceUuid of ALT_SERVICE_UUIDS) {
     try {
       const service = await server.getPrimaryService(serviceUuid);
