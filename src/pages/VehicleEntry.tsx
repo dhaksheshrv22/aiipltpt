@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Truck, Info, AlertCircle } from "lucide-react";
+import EntryTokenModal from "@/components/EntryTokenModal";
 
 export default function VehicleEntry() {
   const navigate = useNavigate();
