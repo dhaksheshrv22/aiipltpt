@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -6,8 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useInterval } from "@/hooks/useInterval";
 import {
-  LayoutDashboard, Truck, PlusCircle, History, BarChart3, Settings, LogOut, Menu, X
+  LayoutDashboard, Truck, PlusCircle, History, BarChart3, Settings, LogOut, Menu
 } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -52,9 +53,7 @@ export default function AppLayout() {
       <aside className={`fixed md:sticky top-0 left-0 z-50 h-screen w-64 bg-sidebar text-sidebar-foreground flex flex-col transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
         <div className="p-5 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center">
-              <Truck className="w-5 h-5 text-sidebar-primary-foreground" />
-            </div>
+            <img src={logo} alt="AIIPL" className="w-9 h-9 rounded-lg object-contain" />
             <div>
               <h1 className="font-bold text-sm text-sidebar-foreground">AIIPL</h1>
               <p className="text-xs text-sidebar-foreground/60">Truck Parking Terminal</p>
