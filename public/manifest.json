@@ -1,0 +1,22 @@
+{
+  "name": "AIIPL TRUCK PARKING TERMINAL",
+  "short_name": "AIIPL Parking",
+  "description": "AIIPL Truck Parking Terminal - Heavy Vehicle Parking Management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
