@@ -48,7 +48,7 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
       <DialogContent className="max-w-md print:shadow-none print:border-none">
         <div className="font-mono text-sm space-y-3 print:text-black" id="receipt">
           <div className="text-center space-y-1">
-            <p className="text-lg font-bold">HEAVY VEHICLE PARKING</p>
+            <p className="text-lg font-bold">AIIPL TRUCK PARKING TERMINAL</p>
             <p className="text-xs text-muted-foreground">RECEIPT</p>
             <div className="border-t border-dashed my-2" />
           </div>
