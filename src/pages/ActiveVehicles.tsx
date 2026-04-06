@@ -8,13 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock } from "lucide-react";
+import { Search, Truck, Clock, Pencil } from "lucide-react";
 import ExitModal from "@/components/ExitModal";
+import EditVehicleModal from "@/components/EditVehicleModal";
 
 export default function ActiveVehicles() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [exitVehicle, setExitVehicle] = useState<any>(null);
+  const [editVehicle, setEditVehicle] = useState<any>(null);
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
 
@@ -99,7 +101,12 @@ export default function ActiveVehicles() {
                       {v.payment_status}
                     </Badge>
                   </div>
-                  <Button className="w-full" onClick={() => setExitVehicle(v)}>Process Exit</Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditVehicle(v)}>
+                      <Pencil className="w-3 h-3 mr-1" /> Edit
+                    </Button>
+                    <Button className="flex-1" onClick={() => setExitVehicle(v)}>Process Exit</Button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -115,6 +122,17 @@ export default function ActiveVehicles() {
             setExitVehicle(null);
             queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
             queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
+          }}
+        />
+      )}
+
+      {editVehicle && (
+        <EditVehicleModal
+          vehicle={editVehicle}
+          onClose={() => setEditVehicle(null)}
+          onSaved={() => {
+            setEditVehicle(null);
+            queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
           }}
         />
       )}
