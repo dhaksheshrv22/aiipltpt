@@ -56,8 +56,8 @@ export default function AppLayout() {
               <Truck className="w-5 h-5 text-sidebar-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-bold text-sm text-sidebar-foreground">HV Parking</h1>
-              <p className="text-xs text-sidebar-foreground/60">Management System</p>
+              <h1 className="font-bold text-sm text-sidebar-foreground">AIIPL</h1>
+              <p className="text-xs text-sidebar-foreground/60">Truck Parking Terminal</p>
             </div>
           </div>
         </div>
