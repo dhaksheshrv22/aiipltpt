@@ -253,7 +253,7 @@ export async function printExitReceipt(receipt: {
     COMMANDS.LARGE,
     textToBytes("PARKING RECEIPT\n"),
     COMMANDS.NORMAL_SIZE,
-    textToBytes("HEAVY VEHICLE PARKING\n"),
+    textToBytes("AIIPL TRUCK PARKING TERMINAL\n"),
     COMMANDS.LINE,
     dashedLine(),
     COMMANDS.LEFT,
