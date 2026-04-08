@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { formatINR, formatDateTime, formatDuration } from "@/utils/pricing";
+import { formatINR, formatDate, formatTime, formatDuration } from "@/utils/pricing";
 import { connectPrinter, isPrinterConnected, printExitReceipt } from "@/utils/bluetoothPrinter";
 import { toast } from "sonner";
 import { Printer, X, Bluetooth } from "lucide-react";
@@ -43,28 +43,36 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
     setPrinting(false);
   };
 
+  // Fix category display - remove any non-ASCII characters
+  const cleanCategory = (cat: string) => {
+    if (!cat) return "";
+    return cat.replace(/[^\x20-\x7E]/g, "-");
+  };
+
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md print:shadow-none print:border-none">
         <div className="font-mono text-sm space-y-3 print:text-black" id="receipt">
           <div className="text-center space-y-1">
             <p className="text-lg font-bold">AIIPL TRUCK PARKING TERMINAL</p>
-            <p className="text-xs text-muted-foreground">RECEIPT</p>
+            <p className="text-xs text-muted-foreground">EXIT RECEIPT</p>
             <div className="border-t border-dashed my-2" />
           </div>
 
           <div className="space-y-1">
-            <Row label="Receipt No" value={receipt.receiptNo} />
+            <Row label="Receipt No." value={receipt.receiptNo} />
             <Row label="Vehicle" value={receipt.vehicle_number} />
-            <Row label="Mobile" value={receipt.driver_mobile} />
-            <Row label="Category" value={receipt.pricing_category} />
+            <Row label="Mobile No." value={receipt.driver_mobile} />
+            <Row label="Category" value={cleanCategory(receipt.pricing_category)} />
           </div>
 
           <div className="border-t border-dashed" />
 
           <div className="space-y-1">
-            <Row label="Entry" value={formatDateTime(receipt.entry_time)} />
-            <Row label="Exit" value={formatDateTime(receipt.exit_time)} />
+            <Row label="Entry Date" value={formatDate(receipt.entry_time)} />
+            <Row label="Entry Time" value={formatTime(receipt.entry_time)} />
+            <Row label="Exit Date" value={formatDate(receipt.exit_time)} />
+            <Row label="Exit Time" value={formatTime(receipt.exit_time)} />
             <Row label="Duration" value={formatDuration(new Date(receipt.entry_time), new Date(receipt.exit_time))} />
           </div>
 

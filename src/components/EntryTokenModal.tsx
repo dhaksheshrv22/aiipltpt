@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { formatINR, formatDateTime } from "@/utils/pricing";
+import { formatINR, formatDate, formatTime, generateReceiptNumber } from "@/utils/pricing";
 import { connectPrinter, isPrinterConnected, printEntryToken } from "@/utils/bluetoothPrinter";
 import { toast } from "sonner";
 import { Bluetooth, Printer, X, Check } from "lucide-react";
+import Barcode from "react-barcode";
 
 interface EntryTokenModalProps {
   vehicle: {
@@ -24,6 +25,9 @@ interface EntryTokenModalProps {
 export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalProps) {
   const [printing, setPrinting] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [tokenNumber] = useState(() => generateReceiptNumber());
+
+  const isPaid = vehicle.advance_paid || vehicle.payment_mode !== "Due";
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -43,7 +47,7 @@ export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalPro
     }
     setPrinting(true);
     try {
-      await printEntryToken(vehicle);
+      await printEntryToken({ ...vehicle, tokenNumber });
       toast.success("Entry token printed!");
     } catch (err: any) {
       toast.error("Print failed: " + err.message);
@@ -62,17 +66,40 @@ export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalPro
 
           <div className="font-mono text-sm bg-muted p-4 rounded-lg text-left space-y-1">
             <div className="text-center mb-2">
+              <p className="font-bold text-base">AIIPL TRUCK PARKING TERMINAL</p>
+              <div className="border-t border-dashed my-2" />
               <p className="font-bold text-lg">PARKING TOKEN</p>
               <div className="border-t border-dashed my-2" />
             </div>
+            <Row label="Token No." value={tokenNumber} />
+            <div className="border-t border-dashed my-2" />
             <div className="text-center font-bold text-xl mb-2">{vehicle.vehicle_number}</div>
             <div className="border-t border-dashed my-2" />
             <Row label="Wheels" value={`${vehicle.num_wheels} (${vehicle.pricing_category})`} />
             <Row label="Rate" value={`${formatINR(vehicle.daily_rate)}/day`} />
-            <Row label="Mobile" value={vehicle.driver_mobile} />
-            <Row label="Entry" value={formatDateTime(vehicle.entry_time)} />
-            <Row label="Payment" value={vehicle.payment_mode} />
-            <Row label="Advance" value={vehicle.advance_paid ? formatINR(vehicle.advance_amount) : "None"} />
+            <Row label="Mobile No." value={vehicle.driver_mobile} />
+            <Row label="Entry Date" value={formatDate(vehicle.entry_time)} />
+            <Row label="Entry Time" value={formatTime(vehicle.entry_time)} />
+            {isPaid ? (
+              <>
+                <Row label="Payment Mode" value={vehicle.payment_mode} />
+                <Row label="Advance" value={vehicle.advance_paid ? formatINR(vehicle.advance_amount) : "None"} />
+              </>
+            ) : (
+              <Row label="Payment" value="Due" />
+            )}
+            <div className="border-t border-dashed my-2" />
+            <div className="flex justify-center my-2">
+              <Barcode
+                value={tokenNumber}
+                width={1.5}
+                height={40}
+                fontSize={10}
+                displayValue={false}
+                margin={0}
+              />
+            </div>
+            <p className="text-center text-[10px]">{tokenNumber}</p>
             <div className="border-t border-dashed my-2" />
             <p className="text-center text-xs font-semibold">KEEP THIS TOKEN SAFE</p>
           </div>
