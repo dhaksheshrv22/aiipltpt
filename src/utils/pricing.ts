@@ -98,8 +98,18 @@ export function formatDateTime(date: Date | string): string {
   return format(d, "dd MMM yyyy, hh:mm a");
 }
 
+export function formatDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return format(d, "dd MMM yyyy");
+}
+
+export function formatTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return format(d, "hh:mm a");
+}
+
 export function generateReceiptNumber(): string {
   const year = new Date().getFullYear();
-  const rand = Math.floor(10000 + Math.random() * 90000);
-  return `HVP-${year}-${rand}`;
+  const serial = Math.floor(1000 + Math.random() * 9000);
+  return `AIIPL-${year}-${String(serial).padStart(4, "0")}`;
 }

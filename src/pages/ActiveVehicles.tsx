@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isOverstay, formatINR, formatDateTime, formatDuration, calculateBill } from "@/utils/pricing";
@@ -8,15 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock, Pencil } from "lucide-react";
+import { Search, Truck, Clock, Pencil, ScanBarcode } from "lucide-react";
 import ExitModal from "@/components/ExitModal";
 import EditVehicleModal from "@/components/EditVehicleModal";
+import BarcodeScanner from "@/components/BarcodeScanner";
+import { toast } from "sonner";
 
 export default function ActiveVehicles() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [exitVehicle, setExitVehicle] = useState<any>(null);
   const [editVehicle, setEditVehicle] = useState<any>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
 
@@ -31,14 +34,33 @@ export default function ActiveVehicles() {
     refetchInterval: 120000,
   });
 
+  const handleScan = useCallback((code: string) => {
+    setScannerOpen(false);
+    // Token format: AIIPL-YEAR-XXXX — search by vehicle number or just show all and let user find
+    // For now, search active vehicles - the barcode contains the token number
+    // We need to find the vehicle by matching. Since we don't store token numbers in DB,
+    // we can use it as a search term or match vehicle number
+    toast.info(`Scanned: ${code}`);
+    setSearch(code);
+  }, []);
+
   const filtered = vehicles.filter(v => {
-    const matchesSearch = !search || v.vehicle_number.toLowerCase().includes(search.toLowerCase()) || v.driver_mobile.includes(search);
+    const matchesSearch = !search || 
+      v.vehicle_number.toLowerCase().includes(search.toLowerCase()) || 
+      v.driver_mobile.includes(search);
     if (!matchesSearch) return false;
     if (filter === "overstay") return isOverstay(v.entry_time);
     if (filter === "advance") return v.advance_paid;
     if (filter === "due") return v.payment_status === "Due";
     return true;
   });
+
+  // Auto-open exit modal if scan finds exactly one vehicle
+  const autoExitFromScan = filtered.length === 1 && search.length > 3 && !exitVehicle;
+  if (autoExitFromScan && filtered[0]) {
+    // Use setTimeout to avoid setState during render
+    setTimeout(() => setExitVehicle(filtered[0]), 0);
+  }
 
   const now = new Date();
 
@@ -51,14 +73,19 @@ export default function ActiveVehicles() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search by vehicle or mobile..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <Tabs value={filter} onValueChange={setFilter}>
-          <TabsList>
-            <TabsTrigger value="all">All ({vehicles.length})</TabsTrigger>
-            <TabsTrigger value="overstay">Overstay</TabsTrigger>
-            <TabsTrigger value="advance">Advance</TabsTrigger>
-            <TabsTrigger value="due">Due</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => setScannerOpen(true)} title="Scan Barcode">
+            <ScanBarcode className="w-5 h-5" />
+          </Button>
+          <Tabs value={filter} onValueChange={setFilter}>
+            <TabsList>
+              <TabsTrigger value="all">All ({vehicles.length})</TabsTrigger>
+              <TabsTrigger value="overstay">Overstay</TabsTrigger>
+              <TabsTrigger value="advance">Advance</TabsTrigger>
+              <TabsTrigger value="due">Due</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {isLoading ? (
@@ -117,9 +144,10 @@ export default function ActiveVehicles() {
       {exitVehicle && (
         <ExitModal
           vehicle={exitVehicle}
-          onClose={() => setExitVehicle(null)}
+          onClose={() => { setExitVehicle(null); setSearch(""); }}
           onComplete={() => {
             setExitVehicle(null);
+            setSearch("");
             queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
             queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
           }}
@@ -136,6 +164,12 @@ export default function ActiveVehicles() {
           }}
         />
       )}
+
+      <BarcodeScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={handleScan}
+      />
     </div>
   );
 }

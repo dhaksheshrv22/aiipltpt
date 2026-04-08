@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateBill, formatINR, formatDateTime, formatDuration, generateReceiptNumber } from "@/utils/pricing";
+import { calculateBill, formatINR, formatDate, formatTime, formatDuration, generateReceiptNumber } from "@/utils/pricing";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,12 @@ interface ExitModalProps {
   vehicle: any;
   onClose: () => void;
   onComplete: () => void;
+}
+
+// Fix category display - remove non-ASCII chars (Chinese chars from dash encoding)
+function cleanCategory(cat: string): string {
+  if (!cat) return "";
+  return cat.replace(/[^\x20-\x7E]/g, "-");
 }
 
 export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalProps) {
@@ -80,10 +86,18 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
           <div className="grid grid-cols-2 gap-2 text-sm">
             <span className="text-muted-foreground">Vehicle:</span>
             <span className="font-mono font-bold">{vehicle.vehicle_number}</span>
-            <span className="text-muted-foreground">Entry:</span>
-            <span>{formatDateTime(vehicle.entry_time)}</span>
-            <span className="text-muted-foreground">Exit (now):</span>
-            <span>{formatDateTime(now)}</span>
+            <span className="text-muted-foreground">Category:</span>
+            <span>{cleanCategory(vehicle.pricing_category)}</span>
+            <span className="text-muted-foreground">Mobile No.:</span>
+            <span>{vehicle.driver_mobile}</span>
+            <span className="text-muted-foreground">Entry Date:</span>
+            <span>{formatDate(vehicle.entry_time)}</span>
+            <span className="text-muted-foreground">Entry Time:</span>
+            <span>{formatTime(vehicle.entry_time)}</span>
+            <span className="text-muted-foreground">Exit Date:</span>
+            <span>{formatDate(now)}</span>
+            <span className="text-muted-foreground">Exit Time:</span>
+            <span>{formatTime(now)}</span>
             <span className="text-muted-foreground">Duration:</span>
             <span className="font-medium">{formatDuration(new Date(vehicle.entry_time), now)}</span>
           </div>
