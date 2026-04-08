@@ -172,19 +172,29 @@ export async function printEntryToken(vehicle: {
   advance_paid: boolean;
   advance_amount: number;
   payment_mode: string;
+  tokenNumber?: string;
 }): Promise<void> {
   const entryDate = new Date(vehicle.entry_time);
   const dateStr = entryDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   const timeStr = entryDate.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  const isPaid = vehicle.advance_paid || vehicle.payment_mode !== "Due";
 
   const data = concatBytes(
     COMMANDS.INIT,
+    COMMANDS.CENTER,
+    COMMANDS.BOLD_ON,
+    textToBytes("AIIPL TRUCK PARKING TERMINAL\n"),
+    COMMANDS.BOLD_OFF,
+    COMMANDS.LINE,
+    dashedLine(),
     COMMANDS.CENTER,
     COMMANDS.LARGE,
     textToBytes("PARKING TOKEN\n"),
     COMMANDS.NORMAL_SIZE,
     COMMANDS.LINE,
     dashedLine(),
+    COMMANDS.LEFT,
+    ...(vehicle.tokenNumber ? [textToBytes(`Token No.: ${vehicle.tokenNumber}\n`), dashedLine()] : []),
     COMMANDS.CENTER,
     COMMANDS.DOUBLE_HEIGHT,
     COMMANDS.BOLD_ON,
@@ -194,12 +204,17 @@ export async function printEntryToken(vehicle: {
     COMMANDS.LINE,
     dashedLine(),
     COMMANDS.LEFT,
-    textToBytes(`Wheels   : ${vehicle.num_wheels} (${vehicle.pricing_category})\n`),
-    textToBytes(`Rate     : Rs.${vehicle.daily_rate}/day\n`),
-    textToBytes(`Mobile   : ${vehicle.driver_mobile}\n`),
-    textToBytes(`Entry    : ${dateStr} ${timeStr}\n`),
-    textToBytes(`Payment  : ${vehicle.payment_mode}\n`),
-    textToBytes(`Advance  : ${vehicle.advance_paid ? `Rs.${vehicle.advance_amount}` : "None"}\n`),
+    textToBytes(`Wheels    : ${vehicle.num_wheels} (${vehicle.pricing_category})\n`),
+    textToBytes(`Rate      : Rs.${vehicle.daily_rate}/day\n`),
+    textToBytes(`Mobile No.: ${vehicle.driver_mobile}\n`),
+    textToBytes(`Entry Date: ${dateStr}\n`),
+    textToBytes(`Entry Time: ${timeStr}\n`),
+    ...(isPaid
+      ? [
+          textToBytes(`Pay Mode  : ${vehicle.payment_mode}\n`),
+          textToBytes(`Advance   : ${vehicle.advance_paid ? `Rs.${vehicle.advance_amount}` : "None"}\n`),
+        ]
+      : [textToBytes(`Payment   : Due\n`)]),
     dashedLine(),
     COMMANDS.CENTER,
     COMMANDS.BOLD_ON,
@@ -271,8 +286,10 @@ export async function printExitReceipt(receipt: {
     textToBytes(`Category : ${receipt.pricing_category}\n`),
     textToBytes(`Mobile   : ${receipt.driver_mobile}\n`),
     dashedLine(),
-    textToBytes(`Entry    : ${fmtDate(entryDate)} ${fmtTime(entryDate)}\n`),
-    textToBytes(`Exit     : ${fmtDate(exitDate)} ${fmtTime(exitDate)}\n`),
+    textToBytes(`Entry Date: ${fmtDate(entryDate)}\n`),
+    textToBytes(`Entry Time: ${fmtTime(entryDate)}\n`),
+    textToBytes(`Exit Date : ${fmtDate(exitDate)}\n`),
+    textToBytes(`Exit Time : ${fmtTime(exitDate)}\n`),
     textToBytes(`Duration : ${durationStr}\n`),
     dashedLine(),
     COMMANDS.BOLD_ON,
