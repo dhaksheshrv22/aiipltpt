@@ -108,8 +108,8 @@ export function formatTime(date: Date | string): string {
   return format(d, "hh:mm a");
 }
 
-export function generateReceiptNumber(): string {
+export function generateReceiptNumber(prefix: string = "AIIPL"): string {
   const year = new Date().getFullYear();
   const serial = Math.floor(1000 + Math.random() * 9000);
-  return `AIIPL-${year}-${String(serial).padStart(4, "0")}`;
+  return `${prefix}-${year}-${String(serial).padStart(4, "0")}`;
 }
