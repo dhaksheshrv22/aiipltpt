@@ -72,6 +72,11 @@ export type Database = {
           facility_name: string | null
           id: string
           max_stay_days: number | null
+          receipt_company_name: string | null
+          receipt_contact_info: string | null
+          receipt_footer_text: string | null
+          receipt_header_text: string | null
+          receipt_prefix: string | null
         }
         Insert: {
           advance_warning_hours?: number | null
@@ -79,6 +84,11 @@ export type Database = {
           facility_name?: string | null
           id?: string
           max_stay_days?: number | null
+          receipt_company_name?: string | null
+          receipt_contact_info?: string | null
+          receipt_footer_text?: string | null
+          receipt_header_text?: string | null
+          receipt_prefix?: string | null
         }
         Update: {
           advance_warning_hours?: number | null
@@ -86,6 +96,11 @@ export type Database = {
           facility_name?: string | null
           id?: string
           max_stay_days?: number | null
+          receipt_company_name?: string | null
+          receipt_contact_info?: string | null
+          receipt_footer_text?: string | null
+          receipt_header_text?: string | null
+          receipt_prefix?: string | null
         }
         Relationships: []
       }
