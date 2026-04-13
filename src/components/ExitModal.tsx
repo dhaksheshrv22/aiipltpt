@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
+import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import ReceiptModal from "@/components/ReceiptModal";
 
 interface ExitModalProps {
@@ -24,6 +25,7 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const [exitPaymentMode, setExitPaymentMode] = useState(vehicle.payment_mode);
   const [loading, setLoading] = useState(false);
   const [receipt, setReceipt] = useState<any>(null);
+  const receiptSettings = useReceiptSettings();
 
   const now = new Date();
   const bill = calculateBill(new Date(vehicle.entry_time), now, vehicle.daily_rate, vehicle.advance_paid ?? false);
@@ -31,7 +33,7 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const handleExit = async () => {
     setLoading(true);
     const totalHours = parseFloat(bill.totalHours.toFixed(2));
-    const receiptNo = generateReceiptNumber();
+    const receiptNo = generateReceiptNumber(receiptSettings.prefix);
 
     const historyRow = {
       vehicle_number: vehicle.vehicle_number,
