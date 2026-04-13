@@ -25,6 +25,7 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const [exitPaymentMode, setExitPaymentMode] = useState(vehicle.payment_mode);
   const [loading, setLoading] = useState(false);
   const [receipt, setReceipt] = useState<any>(null);
+  const receiptSettings = useReceiptSettings();
 
   const now = new Date();
   const bill = calculateBill(new Date(vehicle.entry_time), now, vehicle.daily_rate, vehicle.advance_paid ?? false);
