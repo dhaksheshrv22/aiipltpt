@@ -18,6 +18,7 @@ interface EntryTokenModalProps {
     advance_paid: boolean;
     advance_amount: number;
     payment_mode: string;
+    payment_status: string;
   };
   onClose: () => void;
 }
