@@ -33,7 +33,7 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const handleExit = async () => {
     setLoading(true);
     const totalHours = parseFloat(bill.totalHours.toFixed(2));
-    const receiptNo = generateReceiptNumber();
+    const receiptNo = generateReceiptNumber(receiptSettings.prefix);
 
     const historyRow = {
       vehicle_number: vehicle.vehicle_number,
