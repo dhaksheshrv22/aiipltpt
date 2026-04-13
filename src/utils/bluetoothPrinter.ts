@@ -48,6 +48,25 @@ function dashedLine(): Uint8Array {
   return textToBytes("--------------------------------\n");
 }
 
+// ESC/POS barcode: GS k <type> <len> <data>
+// Type 73 = CODE128, with length prefix
+function barcodeBytes(code: string): Uint8Array {
+  const codeData = textToBytes(code);
+  return concatBytes(
+    // Set barcode height: GS h n (n = dots, default ~162)
+    new Uint8Array([GS, 0x68, 0x50]), // 80 dots tall
+    // Set barcode width: GS w n (2=medium)
+    new Uint8Array([GS, 0x77, 0x02]),
+    // Print HRI below barcode: GS H n (2=below)
+    new Uint8Array([GS, 0x48, 0x02]),
+    // HRI font: GS f n (0=Font A)
+    new Uint8Array([GS, 0x66, 0x00]),
+    // Print barcode: GS k 73 len data
+    new Uint8Array([GS, 0x6b, 73, codeData.length]),
+    codeData,
+  );
+}
+
 function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   const total = arrays.reduce((acc, arr) => acc + arr.length, 0);
   const result = new Uint8Array(total);
