@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
+import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import ReceiptModal from "@/components/ReceiptModal";
 
 interface ExitModalProps {
