@@ -235,6 +235,14 @@ export async function printEntryToken(vehicle: {
         ]
       : [textToBytes(`Payment   : Due\n`)]),
     dashedLine(),
+    ...(vehicle.tokenNumber
+      ? [
+          COMMANDS.CENTER,
+          barcodeBytes(vehicle.tokenNumber),
+          COMMANDS.LINE,
+          dashedLine(),
+        ]
+      : []),
     COMMANDS.CENTER,
     COMMANDS.BOLD_ON,
     textToBytes("KEEP THIS TOKEN SAFE\n"),
