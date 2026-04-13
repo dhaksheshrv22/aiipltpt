@@ -28,7 +28,7 @@ export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalPro
   const [connecting, setConnecting] = useState(false);
   const [tokenNumber] = useState(() => generateReceiptNumber());
 
-  const isPaid = vehicle.advance_paid || vehicle.payment_mode !== "Due";
+  const isPaid = vehicle.payment_status === "Paid";
 
   const handleConnect = async () => {
     setConnecting(true);
