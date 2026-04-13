@@ -96,6 +96,7 @@ export default function VehicleEntry() {
       advance_paid: advancePaid,
       advance_amount: advanceAmount,
       payment_mode: paymentMode,
+      payment_status: finalPaymentStatus,
     });
   };
 
