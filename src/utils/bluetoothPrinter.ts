@@ -4,7 +4,6 @@
 const ESC = 0x1b;
 const GS = 0x1d;
 const LF = 0x0a;
-const NUL = 0x00;
 
 // ESC/POS Commands
 const COMMANDS = {
@@ -49,31 +48,78 @@ function dashedLine(): Uint8Array {
   return textToBytes("--------------------------------\n");
 }
 
-// ESC/POS barcode using legacy CODE39 command for broader clone-printer support
-function barcodeBytes(code: string): Uint8Array {
+function canvasToRasterBytes(canvas: HTMLCanvasElement): Uint8Array {
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    return new Uint8Array();
+  }
+
+  const { width, height } = canvas;
+  const imageData = context.getImageData(0, 0, width, height).data;
+  const bytesPerRow = Math.ceil(width / 8);
+  const raster = new Uint8Array(bytesPerRow * height);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const pixelIndex = (y * width + x) * 4;
+      const alpha = imageData[pixelIndex + 3];
+      const brightness = (imageData[pixelIndex] + imageData[pixelIndex + 1] + imageData[pixelIndex + 2]) / 3;
+      const isDarkPixel = alpha > 0 && brightness < 200;
+
+      if (isDarkPixel) {
+        raster[y * bytesPerRow + (x >> 3)] |= 0x80 >> (x & 7);
+      }
+    }
+  }
+
+  return concatBytes(
+    new Uint8Array([
+      GS,
+      0x76,
+      0x30,
+      0x00,
+      bytesPerRow & 0xff,
+      (bytesPerRow >> 8) & 0xff,
+      height & 0xff,
+      (height >> 8) & 0xff,
+    ]),
+    raster,
+    COMMANDS.LINE,
+  );
+}
+
+// Print barcode as raster image instead of native barcode commands for better BLE printer compatibility
+async function barcodeBytes(code: string): Promise<Uint8Array> {
   const safeCode = code.toUpperCase().replace(/[^A-Z0-9\-.\$\/\+% ]/g, "");
 
   if (!safeCode) {
     return textToBytes(`${code}\n`);
   }
 
-  const codeData = textToBytes(safeCode);
+  if (typeof document === "undefined") {
+    return textToBytes(`${safeCode}\n`);
+  }
 
-  return concatBytes(
-    // Print HRI below barcode: GS H n (2=below)
-    new Uint8Array([GS, 0x48, 0x02]),
-    // HRI font: GS f n (0=Font A)
-    new Uint8Array([GS, 0x66, 0x00]),
-    // Set barcode height: GS h n
-    new Uint8Array([GS, 0x68, 0x60]),
-    // Set barcode width: GS w n (3=wide for better scan reliability)
-    new Uint8Array([GS, 0x77, 0x03]),
-    // Print barcode: GS k 4 d1...dk NUL (legacy CODE39 command)
-    new Uint8Array([GS, 0x6b, 0x04]),
-    codeData,
-    new Uint8Array([NUL]),
-    COMMANDS.LINE,
-  );
+  try {
+    const barcodeModule = await import("jsbarcode");
+    const JsBarcode = (barcodeModule.default ?? barcodeModule) as any;
+    const canvas = document.createElement("canvas");
+
+    JsBarcode(canvas, safeCode, {
+      format: "CODE39",
+      width: 2,
+      height: 56,
+      margin: 8,
+      displayValue: false,
+      lineColor: "#000000",
+      background: "#FFFFFF",
+    });
+
+    return canvasToRasterBytes(canvas);
+  } catch {
+    return textToBytes(`${safeCode}\n`);
+  }
 }
 
 function concatBytes(...arrays: Uint8Array[]): Uint8Array {
@@ -256,7 +302,7 @@ export async function printEntryToken(vehicle: {
   const barcodeBlock = vehicle.tokenNumber
     ? concatBytes(
         COMMANDS.CENTER,
-        barcodeBytes(vehicle.tokenNumber),
+        await barcodeBytes(vehicle.tokenNumber),
         dashedLine(),
       )
     : new Uint8Array();
