@@ -4,6 +4,7 @@
 const ESC = 0x1b;
 const GS = 0x1d;
 const LF = 0x0a;
+const NUL = 0x00;
 
 // ESC/POS Commands
 const COMMANDS = {
@@ -48,23 +49,30 @@ function dashedLine(): Uint8Array {
   return textToBytes("--------------------------------\n");
 }
 
-// ESC/POS barcode using CODE39 (widely supported, handles alphanumeric + hyphens)
+// ESC/POS barcode using legacy CODE39 command for broader clone-printer support
 function barcodeBytes(code: string): Uint8Array {
-  // Strip characters not valid in CODE39 (A-Z, 0-9, - . $ / + % space)
   const safeCode = code.toUpperCase().replace(/[^A-Z0-9\-.\$\/\+% ]/g, "");
+
+  if (!safeCode) {
+    return textToBytes(`${code}\n`);
+  }
+
   const codeData = textToBytes(safeCode);
+
   return concatBytes(
-    // Set barcode height: GS h n
-    new Uint8Array([GS, 0x68, 0x50]), // 80 dots tall
-    // Set barcode width: GS w n (2=medium)
-    new Uint8Array([GS, 0x77, 0x02]),
     // Print HRI below barcode: GS H n (2=below)
     new Uint8Array([GS, 0x48, 0x02]),
     // HRI font: GS f n (0=Font A)
     new Uint8Array([GS, 0x66, 0x00]),
-    // Print barcode: GS k 4 (CODE39) with length-prefixed format (m=69)
-    new Uint8Array([GS, 0x6b, 69, codeData.length]),
+    // Set barcode height: GS h n
+    new Uint8Array([GS, 0x68, 0x60]),
+    // Set barcode width: GS w n (3=wide for better scan reliability)
+    new Uint8Array([GS, 0x77, 0x03]),
+    // Print barcode: GS k 4 d1...dk NUL (legacy CODE39 command)
+    new Uint8Array([GS, 0x6b, 0x04]),
     codeData,
+    new Uint8Array([NUL]),
+    COMMANDS.LINE,
   );
 }
 
@@ -167,7 +175,7 @@ async function sendToPrinter(data: Uint8Array): Promise<void> {
   }
 
   // Send in chunks (BLE has MTU limits, typically 20-512 bytes)
-  const chunkSize = 100;
+  const chunkSize = 64;
   for (let i = 0; i < data.length; i += chunkSize) {
     const chunk = data.slice(i, i + chunkSize);
     if (cachedCharacteristic.properties.writeWithoutResponse) {
@@ -176,7 +184,14 @@ async function sendToPrinter(data: Uint8Array): Promise<void> {
       await cachedCharacteristic.writeValueWithResponse(chunk);
     }
     // Small delay between chunks
-    await new Promise(r => setTimeout(r, 50));
+    await new Promise(r => setTimeout(r, 80));
+  }
+}
+
+async function sendPrintJob(...segments: Uint8Array[]): Promise<void> {
+  for (const segment of segments) {
+    if (segment.length === 0) continue;
+    await sendToPrinter(segment);
   }
 }
 
@@ -199,7 +214,7 @@ export async function printEntryToken(vehicle: {
   const timeStr = entryDate.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
   const isPaid = vehicle.advance_paid || vehicle.payment_mode !== "Due";
 
-  const data = concatBytes(
+  const headerBlock = concatBytes(
     COMMANDS.INIT,
     COMMANDS.CENTER,
     COMMANDS.BOLD_ON,
@@ -236,14 +251,17 @@ export async function printEntryToken(vehicle: {
         ]
       : [textToBytes(`Payment   : Due\n`)]),
     dashedLine(),
-    ...(vehicle.tokenNumber
-      ? [
-          COMMANDS.CENTER,
-          barcodeBytes(vehicle.tokenNumber),
-          COMMANDS.LINE,
-          dashedLine(),
-        ]
-      : []),
+  );
+
+  const barcodeBlock = vehicle.tokenNumber
+    ? concatBytes(
+        COMMANDS.CENTER,
+        barcodeBytes(vehicle.tokenNumber),
+        dashedLine(),
+      )
+    : new Uint8Array();
+
+  const footerBlock = concatBytes(
     COMMANDS.CENTER,
     COMMANDS.BOLD_ON,
     textToBytes("KEEP THIS TOKEN SAFE\n"),
@@ -254,7 +272,7 @@ export async function printEntryToken(vehicle: {
     COMMANDS.CUT,
   );
 
-  await sendToPrinter(data);
+  await sendPrintJob(headerBlock, barcodeBlock, footerBlock);
 }
 
 export async function printExitReceipt(receipt: {
