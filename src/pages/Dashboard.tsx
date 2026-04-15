@@ -71,11 +71,12 @@ export default function Dashboard() {
   });
 
   const overstayVehicles = activeVehicles.filter(v => isOverstay(v.entry_time));
+  const tempOutVehicles = activeVehicles.filter(v => v.is_temporarily_out);
 
   const stats = [
     { label: "Active Vehicles", value: activeVehicles.length, icon: Truck, color: "text-primary" },
+    { label: "Temp Out", value: tempOutVehicles.length, icon: Clock, color: "text-warning" },
     { label: "Today's Revenue", value: formatINR(todayRevenue), icon: IndianRupee, color: "text-success" },
-    { label: "Monthly Revenue", value: formatINR(monthRevenue), icon: TrendingUp, color: "text-primary" },
     { label: "Overstay Alerts", value: overstayVehicles.length, icon: AlertTriangle, color: "text-destructive" },
   ];
 
