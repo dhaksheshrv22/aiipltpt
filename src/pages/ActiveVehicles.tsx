@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock, Pencil, ScanBarcode } from "lucide-react";
+import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle } from "lucide-react";
 import ExitModal from "@/components/ExitModal";
 import EditVehicleModal from "@/components/EditVehicleModal";
+import TempExitModal from "@/components/TempExitModal";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import { toast } from "sonner";
 
@@ -19,6 +20,7 @@ export default function ActiveVehicles() {
   const [filter, setFilter] = useState("all");
   const [exitVehicle, setExitVehicle] = useState<any>(null);
   const [editVehicle, setEditVehicle] = useState<any>(null);
+  const [tempExitVehicle, setTempExitVehicle] = useState<{ vehicle: any; mode: "temp-exit" | "return" } | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
@@ -36,10 +38,6 @@ export default function ActiveVehicles() {
 
   const handleScan = useCallback((code: string) => {
     setScannerOpen(false);
-    // Token format: AIIPL-YEAR-XXXX — search by vehicle number or just show all and let user find
-    // For now, search active vehicles - the barcode contains the token number
-    // We need to find the vehicle by matching. Since we don't store token numbers in DB,
-    // we can use it as a search term or match vehicle number
     toast.info(`Scanned: ${code}`);
     setSearch(code);
   }, []);
@@ -52,21 +50,44 @@ export default function ActiveVehicles() {
     if (filter === "overstay") return isOverstay(v.entry_time);
     if (filter === "advance") return v.advance_paid;
     if (filter === "due") return v.payment_status === "Due";
+    if (filter === "temp-out") return v.is_temporarily_out;
     return true;
   });
 
-  // Auto-open exit modal if scan finds exactly one vehicle
   const autoExitFromScan = filtered.length === 1 && search.length > 3 && !exitVehicle;
   if (autoExitFromScan && filtered[0]) {
-    // Use setTimeout to avoid setState during render
     setTimeout(() => setExitVehicle(filtered[0]), 0);
   }
 
   const now = new Date();
+  const tempOutCount = vehicles.filter(v => v.is_temporarily_out).length;
 
   return (
     <div className="space-y-4 pb-20 md:pb-0">
       <h1 className="text-2xl font-bold">Active Vehicles</h1>
+
+      {/* Alert for temp-out vehicles that exceeded time */}
+      {vehicles.filter(v => {
+        if (!v.is_temporarily_out) return false;
+        const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
+        const paidDays = v.advance_paid ? 1 : 0;
+        return paidDays > 0 && bill.totalHours > paidDays * 26;
+      }).length > 0 && (
+        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-destructive mt-0.5" />
+          <div>
+            <p className="font-semibold text-destructive">Temporary Exit Alert!</p>
+            <p className="text-sm text-muted-foreground">
+              {vehicles.filter(v => {
+                if (!v.is_temporarily_out) return false;
+                const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
+                const paidDays = v.advance_paid ? 1 : 0;
+                return paidDays > 0 && bill.totalHours > paidDays * 26;
+              }).map(v => v.vehicle_number).join(", ")} — exceeded allowed return time.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -78,8 +99,9 @@ export default function ActiveVehicles() {
             <ScanBarcode className="w-5 h-5" />
           </Button>
           <Tabs value={filter} onValueChange={setFilter}>
-            <TabsList>
+            <TabsList className="flex-wrap">
               <TabsTrigger value="all">All ({vehicles.length})</TabsTrigger>
+              <TabsTrigger value="temp-out">Temp Out ({tempOutCount})</TabsTrigger>
               <TabsTrigger value="overstay">Overstay</TabsTrigger>
               <TabsTrigger value="advance">Advance</TabsTrigger>
               <TabsTrigger value="due">Due</TabsTrigger>
@@ -99,15 +121,31 @@ export default function ActiveVehicles() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(v => {
             const overstay = isOverstay(v.entry_time);
+            const isTempOut = v.is_temporarily_out;
             const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
-            const borderColor = overstay ? "border-l-destructive bg-destructive/5" : v.advance_paid ? "border-l-success" : v.payment_status === "Due" ? "border-l-warning" : "border-l-primary";
+            const borderColor = isTempOut
+              ? "border-l-warning bg-warning/5"
+              : overstay
+              ? "border-l-destructive bg-destructive/5"
+              : v.advance_paid
+              ? "border-l-success"
+              : v.payment_status === "Due"
+              ? "border-l-warning"
+              : "border-l-primary";
 
             return (
               <Card key={v.id} className={`border-l-4 ${borderColor} relative`}>
                 <CardContent className="pt-5 space-y-3">
-                  {overstay && (
-                    <Badge variant="destructive" className="absolute top-3 right-3 animate-pulse">OVERSTAY</Badge>
-                  )}
+                  {/* Status badges */}
+                  <div className="absolute top-3 right-3 flex gap-1">
+                    {isTempOut && (
+                      <Badge className="bg-warning text-warning-foreground animate-pulse">TEMP OUT</Badge>
+                    )}
+                    {overstay && !isTempOut && (
+                      <Badge variant="destructive" className="animate-pulse">OVERSTAY</Badge>
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-lg font-bold">{v.vehicle_number}</span>
                     <Badge variant="secondary">{v.pricing_category}</Badge>
@@ -116,23 +154,43 @@ export default function ActiveVehicles() {
                     <p>📱 {v.driver_mobile}</p>
                     <p>🛞 {v.num_wheels} wheels — {formatINR(v.daily_rate)}/day</p>
                     <p>📅 {formatDateTime(v.entry_time)}</p>
+                    {isTempOut && v.temp_exit_time && (
+                      <p className="text-warning">🚪 Temp exit: {formatDateTime(v.temp_exit_time)}</p>
+                    )}
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       <span className="font-medium text-foreground">{formatDuration(new Date(v.entry_time), now)}</span>
                     </div>
                     <p className="font-semibold text-foreground">Est. Bill: {formatINR(bill.grossAmount)}</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {v.advance_paid && <Badge className="bg-success text-success-foreground">Advance Paid</Badge>}
                     <Badge variant={v.payment_status === "Paid" ? "default" : "destructive"}>
                       {v.payment_status}
                     </Badge>
+                    {isTempOut && (
+                      <Badge variant="outline" className="border-warning text-warning">Temporarily Out</Badge>
+                    )}
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditVehicle(v)}>
-                      <Pencil className="w-3 h-3 mr-1" /> Edit
-                    </Button>
-                    <Button className="flex-1" onClick={() => setExitVehicle(v)}>Process Exit</Button>
+                    {!isTempOut ? (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => setEditVehicle(v)}>
+                          <Pencil className="w-3 h-3 mr-1" /> Edit
+                        </Button>
+                        <Button variant="outline" size="sm" className="border-warning text-warning hover:bg-warning/10" onClick={() => setTempExitVehicle({ vehicle: v, mode: "temp-exit" })}>
+                          <LogOut className="w-3 h-3 mr-1" /> Temp Exit
+                        </Button>
+                        <Button size="sm" className="flex-1" onClick={() => setExitVehicle(v)}>Exit</Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button size="sm" className="flex-1" onClick={() => setTempExitVehicle({ vehicle: v, mode: "return" })}>
+                          <RotateCcw className="w-3 h-3 mr-1" /> Return Vehicle
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setExitVehicle(v)}>Full Exit</Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -161,6 +219,19 @@ export default function ActiveVehicles() {
           onSaved={() => {
             setEditVehicle(null);
             queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
+          }}
+        />
+      )}
+
+      {tempExitVehicle && (
+        <TempExitModal
+          vehicle={tempExitVehicle.vehicle}
+          mode={tempExitVehicle.mode}
+          onClose={() => setTempExitVehicle(null)}
+          onComplete={() => {
+            setTempExitVehicle(null);
+            queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
+            queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
           }}
         />
       )}

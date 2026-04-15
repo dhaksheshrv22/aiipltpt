@@ -24,11 +24,14 @@ export type Database = {
           entry_time: string
           expected_exit: string | null
           id: string
+          is_temporarily_out: boolean
           notes: string | null
           num_wheels: number
           payment_mode: string
           payment_status: string
           pricing_category: string
+          return_time: string | null
+          temp_exit_time: string | null
           vehicle_number: string
         }
         Insert: {
@@ -40,11 +43,14 @@ export type Database = {
           entry_time?: string
           expected_exit?: string | null
           id?: string
+          is_temporarily_out?: boolean
           notes?: string | null
           num_wheels: number
           payment_mode: string
           payment_status: string
           pricing_category: string
+          return_time?: string | null
+          temp_exit_time?: string | null
           vehicle_number: string
         }
         Update: {
@@ -56,11 +62,14 @@ export type Database = {
           entry_time?: string
           expected_exit?: string | null
           id?: string
+          is_temporarily_out?: boolean
           notes?: string | null
           num_wheels?: number
           payment_mode?: string
           payment_status?: string
           pricing_category?: string
+          return_time?: string | null
+          temp_exit_time?: string | null
           vehicle_number?: string
         }
         Relationships: []

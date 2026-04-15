@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, IndianRupee, AlertTriangle, TrendingUp, PlusCircle, LogOut as ExitIcon, BarChart3 } from "lucide-react";
+import { Truck, IndianRupee, AlertTriangle, TrendingUp, PlusCircle, LogOut as ExitIcon, BarChart3, Clock } from "lucide-react";
 import { isOverstay, formatINR, formatDateTime, formatDuration } from "@/utils/pricing";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -71,11 +71,12 @@ export default function Dashboard() {
   });
 
   const overstayVehicles = activeVehicles.filter(v => isOverstay(v.entry_time));
+  const tempOutVehicles = activeVehicles.filter(v => v.is_temporarily_out);
 
   const stats = [
     { label: "Active Vehicles", value: activeVehicles.length, icon: Truck, color: "text-primary" },
+    { label: "Temp Out", value: tempOutVehicles.length, icon: Clock, color: "text-warning" },
     { label: "Today's Revenue", value: formatINR(todayRevenue), icon: IndianRupee, color: "text-success" },
-    { label: "Monthly Revenue", value: formatINR(monthRevenue), icon: TrendingUp, color: "text-primary" },
     { label: "Overstay Alerts", value: overstayVehicles.length, icon: AlertTriangle, color: "text-destructive" },
   ];
 
@@ -96,6 +97,18 @@ export default function Dashboard() {
             <p className="font-semibold text-destructive">Overstay Alert!</p>
             <p className="text-sm text-muted-foreground">
               {overstayVehicles.map(v => v.vehicle_number).join(", ")} — parked over 7 days.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {tempOutVehicles.length > 0 && (
+        <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 flex items-start gap-3">
+          <Clock className="w-5 h-5 text-warning mt-0.5" />
+          <div>
+            <p className="font-semibold text-warning">Temporarily Out</p>
+            <p className="text-sm text-muted-foreground">
+              {tempOutVehicles.map(v => v.vehicle_number).join(", ")} — currently outside, time still running.
             </p>
           </div>
         </div>
