@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, IndianRupee, AlertTriangle, TrendingUp, PlusCircle, LogOut as ExitIcon, BarChart3 } from "lucide-react";
+import { Truck, IndianRupee, AlertTriangle, TrendingUp, PlusCircle, LogOut as ExitIcon, BarChart3, Clock } from "lucide-react";
 import { isOverstay, formatINR, formatDateTime, formatDuration } from "@/utils/pricing";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
