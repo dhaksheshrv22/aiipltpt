@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Truck } from "lucide-react";
+import aiiplLogo from "@/assets/aiipl-logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -46,9 +46,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2">
-          <div className="mx-auto w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
-            <Truck className="w-8 h-8 text-primary-foreground" />
-          </div>
+          <img src={aiiplLogo} alt="AIIPL Truck Parking Terminal" className="mx-auto h-20 w-auto" />
           <CardTitle className="text-2xl font-bold">AIIPL Truck Parking Terminal</CardTitle>
           <CardDescription>{isSignUp ? "Create your admin account" : "Sign in to manage your facility"}</CardDescription>
         </CardHeader>
