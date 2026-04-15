@@ -102,6 +102,18 @@ export default function Dashboard() {
         </div>
       )}
 
+      {tempOutVehicles.length > 0 && (
+        <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 flex items-start gap-3">
+          <Clock className="w-5 h-5 text-warning mt-0.5" />
+          <div>
+            <p className="font-semibold text-warning">Temporarily Out</p>
+            <p className="text-sm text-muted-foreground">
+              {tempOutVehicles.map(v => v.vehicle_number).join(", ")} — currently outside, time still running.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map(s => (
           <Card key={s.label}>
