@@ -78,20 +78,23 @@ export default function VehicleEntry() {
       return;
     }
 
-    const finalPaymentStatus = advancePaid ? "Paid" : paymentStatus;
-    const advanceAmount = advancePaid ? pricing.dailyRate : 0;
+    const hasActivePass = !!activePass;
+    const finalPaymentStatus = hasActivePass ? "Paid" : (advancePaid ? "Paid" : paymentStatus);
+    const advanceAmount = hasActivePass ? 0 : (advancePaid ? pricing.dailyRate : 0);
 
     const { data: vehicle, error } = await supabase.from("active_vehicles").insert({
       vehicle_number: formattedVehicle,
       driver_mobile: driverMobile,
       num_wheels: wheels,
       pricing_category: pricing.category,
-      daily_rate: pricing.dailyRate,
-      payment_mode: paymentMode,
-      advance_paid: advancePaid,
+      daily_rate: hasActivePass ? 0 : pricing.dailyRate,
+      payment_mode: hasActivePass ? "Monthly Pass" : paymentMode,
+      advance_paid: !hasActivePass && advancePaid,
       advance_amount: advanceAmount,
       payment_status: finalPaymentStatus,
-      notes: notes || null,
+      is_monthly_pass: hasActivePass,
+      monthly_pass_id: hasActivePass ? activePass.id : null,
+      notes: hasActivePass ? `Monthly Pass ${activePass.pass_id}${notes ? " — " + notes : ""}` : (notes || null),
     }).select().single();
 
     if (error) {
