@@ -152,6 +152,22 @@ export default function VehicleEntry() {
             <div>
               <Label htmlFor="vehicleNumber">Vehicle Number</Label>
               <Input id="vehicleNumber" value={vehicleNumber} onChange={e => setVehicleNumber(e.target.value.toUpperCase())} placeholder="MH-12-AB-1234" className="font-mono" required />
+              {activePass && (
+                <div className="mt-2 p-3 bg-success/10 border border-success/30 rounded-lg flex items-center gap-2">
+                  <BadgeCheck className="w-4 h-4 text-success" />
+                  <span className="text-sm font-medium text-success">
+                    Active Monthly Pass ({activePass.pass_id}) — free entry
+                  </span>
+                </div>
+              )}
+              {expiredPass && (
+                <div className="mt-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-destructive" />
+                  <span className="text-sm text-destructive">
+                    Monthly pass expired on {new Date(expiredPass.pass_expiry_date).toLocaleDateString()} — normal paid parking applies
+                  </span>
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="mobile">Driver Mobile</Label>
