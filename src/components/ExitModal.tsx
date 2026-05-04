@@ -28,7 +28,10 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const receiptSettings = useReceiptSettings();
 
   const now = new Date();
-  const bill = calculateBill(new Date(vehicle.entry_time), now, vehicle.daily_rate, vehicle.advance_paid ?? false);
+  const isMonthlyPass = !!vehicle.is_monthly_pass;
+  const bill = isMonthlyPass
+    ? { totalHours: 0, billableDays: 0, grossAmount: 0, advanceDeduction: 0, balanceDue: 0 }
+    : calculateBill(new Date(vehicle.entry_time), now, vehicle.daily_rate, vehicle.advance_paid ?? false);
 
   const handleExit = async () => {
     setLoading(true);
