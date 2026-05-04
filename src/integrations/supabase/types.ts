@@ -24,7 +24,9 @@ export type Database = {
           entry_time: string
           expected_exit: string | null
           id: string
+          is_monthly_pass: boolean
           is_temporarily_out: boolean
+          monthly_pass_id: string | null
           notes: string | null
           num_wheels: number
           payment_mode: string
@@ -43,7 +45,9 @@ export type Database = {
           entry_time?: string
           expected_exit?: string | null
           id?: string
+          is_monthly_pass?: boolean
           is_temporarily_out?: boolean
+          monthly_pass_id?: string | null
           notes?: string | null
           num_wheels: number
           payment_mode: string
@@ -62,7 +66,9 @@ export type Database = {
           entry_time?: string
           expected_exit?: string | null
           id?: string
+          is_monthly_pass?: boolean
           is_temporarily_out?: boolean
+          monthly_pass_id?: string | null
           notes?: string | null
           num_wheels?: number
           payment_mode?: string
@@ -72,7 +78,15 @@ export type Database = {
           temp_exit_time?: string | null
           vehicle_number?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "active_vehicles_monthly_pass_id_fkey"
+            columns: ["monthly_pass_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_passes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       app_settings: {
         Row: {
@@ -110,6 +124,66 @@ export type Database = {
           receipt_footer_text?: string | null
           receipt_header_text?: string | null
           receipt_prefix?: string | null
+        }
+        Relationships: []
+      }
+      monthly_passes: {
+        Row: {
+          amount: number
+          created_at: string
+          daily_rate: number
+          id: string
+          is_active: boolean
+          notes: string | null
+          num_wheels: number
+          owner_mobile: string
+          owner_name: string | null
+          pass_expiry_date: string
+          pass_id: string
+          pass_start_date: string
+          payment_mode: string
+          payment_status: string
+          pricing_category: string
+          updated_at: string
+          vehicle_number: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          daily_rate: number
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          num_wheels: number
+          owner_mobile: string
+          owner_name?: string | null
+          pass_expiry_date: string
+          pass_id: string
+          pass_start_date?: string
+          payment_mode?: string
+          payment_status?: string
+          pricing_category: string
+          updated_at?: string
+          vehicle_number: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          daily_rate?: number
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          num_wheels?: number
+          owner_mobile?: string
+          owner_name?: string | null
+          pass_expiry_date?: string
+          pass_id?: string
+          pass_start_date?: string
+          payment_mode?: string
+          payment_status?: string
+          pricing_category?: string
+          updated_at?: string
+          vehicle_number?: string
         }
         Relationships: []
       }

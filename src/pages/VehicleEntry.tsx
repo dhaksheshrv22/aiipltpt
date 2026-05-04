@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getPricingDetails, getValidWheelCounts, formatINR, formatDateTime } from "@/utils/pricing";
+import { getPassStatus } from "@/utils/monthlyPass";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Truck, Info, AlertCircle } from "lucide-react";
+import { Truck, Info, AlertCircle, BadgeCheck } from "lucide-react";
 import EntryTokenModal from "@/components/EntryTokenModal";
 
 export default function VehicleEntry() {
@@ -25,10 +26,37 @@ export default function VehicleEntry() {
   const [paymentStatus, setPaymentStatus] = useState("Due");
   const [notes, setNotes] = useState("");
   const [entryToken, setEntryToken] = useState<any>(null);
+  const [activePass, setActivePass] = useState<any>(null);
+  const [expiredPass, setExpiredPass] = useState<any>(null);
   const wheels = parseInt(numWheels) || 0;
   const pricing = wheels > 0 ? getPricingDetails(wheels) : null;
   const isInvalidWheels = wheels > 0 && wheels !== 4 && wheels !== 6 && !(wheels >= 7);
   const showWheelError = numWheels !== "" && !pricing && wheels > 0;
+
+  // Look up monthly pass when vehicle number changes
+  useEffect(() => {
+    const v = vehicleNumber.toUpperCase().trim();
+    if (v.length < 4) { setActivePass(null); setExpiredPass(null); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("monthly_passes")
+        .select("*")
+        .eq("vehicle_number", v)
+        .order("pass_expiry_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!data) { setActivePass(null); setExpiredPass(null); return; }
+      if (getPassStatus(data.pass_expiry_date) === "Active") {
+        setActivePass(data); setExpiredPass(null);
+        if (!numWheels) setNumWheels(String(data.num_wheels));
+        if (!driverMobile) setDriverMobile(data.owner_mobile);
+      } else {
+        setActivePass(null); setExpiredPass(data);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleNumber]);
 
   const validateMobile = (m: string) => /^[6-9]\d{9}$/.test(m);
 
@@ -50,20 +78,23 @@ export default function VehicleEntry() {
       return;
     }
 
-    const finalPaymentStatus = advancePaid ? "Paid" : paymentStatus;
-    const advanceAmount = advancePaid ? pricing.dailyRate : 0;
+    const hasActivePass = !!activePass;
+    const finalPaymentStatus = hasActivePass ? "Paid" : (advancePaid ? "Paid" : paymentStatus);
+    const advanceAmount = hasActivePass ? 0 : (advancePaid ? pricing.dailyRate : 0);
 
     const { data: vehicle, error } = await supabase.from("active_vehicles").insert({
       vehicle_number: formattedVehicle,
       driver_mobile: driverMobile,
       num_wheels: wheels,
       pricing_category: pricing.category,
-      daily_rate: pricing.dailyRate,
-      payment_mode: paymentMode,
-      advance_paid: advancePaid,
+      daily_rate: hasActivePass ? 0 : pricing.dailyRate,
+      payment_mode: hasActivePass ? "Monthly Pass" : paymentMode,
+      advance_paid: !hasActivePass && advancePaid,
       advance_amount: advanceAmount,
       payment_status: finalPaymentStatus,
-      notes: notes || null,
+      is_monthly_pass: hasActivePass,
+      monthly_pass_id: hasActivePass ? activePass.id : null,
+      notes: hasActivePass ? `Monthly Pass ${activePass.pass_id}${notes ? " — " + notes : ""}` : (notes || null),
     }).select().single();
 
     if (error) {
@@ -121,6 +152,22 @@ export default function VehicleEntry() {
             <div>
               <Label htmlFor="vehicleNumber">Vehicle Number</Label>
               <Input id="vehicleNumber" value={vehicleNumber} onChange={e => setVehicleNumber(e.target.value.toUpperCase())} placeholder="MH-12-AB-1234" className="font-mono" required />
+              {activePass && (
+                <div className="mt-2 p-3 bg-success/10 border border-success/30 rounded-lg flex items-center gap-2">
+                  <BadgeCheck className="w-4 h-4 text-success" />
+                  <span className="text-sm font-medium text-success">
+                    Active Monthly Pass ({activePass.pass_id}) — free entry
+                  </span>
+                </div>
+              )}
+              {expiredPass && (
+                <div className="mt-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-destructive" />
+                  <span className="text-sm text-destructive">
+                    Monthly pass expired on {new Date(expiredPass.pass_expiry_date).toLocaleDateString()} — normal paid parking applies
+                  </span>
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="mobile">Driver Mobile</Label>
