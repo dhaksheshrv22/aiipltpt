@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatINR, formatDate } from "@/utils/pricing";
 import { getPassStatus } from "@/utils/monthlyPass";
 import { useReceiptSettings } from "@/hooks/useReceiptSettings";
-import { Printer, X } from "lucide-react";
+import { connectPrinter, isPrinterConnected, printMonthlyPass } from "@/utils/bluetoothPrinter";
+import { toast } from "sonner";
+import { Printer, X, Bluetooth } from "lucide-react";
 import Barcode from "react-barcode";
 
 interface Props {
@@ -16,9 +19,35 @@ export default function MonthlyPassPrintModal({ pass, onClose }: Props) {
   const settings = useReceiptSettings();
   const status = getPassStatus(pass.pass_expiry_date);
   const isPaid = pass.payment_status === "Paid";
+  const [printing, setPrinting] = useState(false);
+  const [connecting, setConnecting] = useState(false);
 
-  const handlePrint = () => {
-    window.print();
+  const handleBrowserPrint = () => window.print();
+
+  const handleConnect = async () => {
+    setConnecting(true);
+    try {
+      await connectPrinter();
+      toast.success("Printer connected!");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setConnecting(false);
+  };
+
+  const handleBluetoothPrint = async () => {
+    if (!isPrinterConnected()) {
+      toast.error("Please connect a Bluetooth printer first");
+      return;
+    }
+    setPrinting(true);
+    try {
+      await printMonthlyPass(pass);
+      toast.success("Monthly pass printed!");
+    } catch (err: any) {
+      toast.error("Print failed: " + err.message);
+    }
+    setPrinting(false);
   };
 
   return (
@@ -60,9 +89,30 @@ export default function MonthlyPassPrintModal({ pass, onClose }: Props) {
           )}
         </div>
 
-        <div className="flex gap-2 mt-4 print:hidden">
-          <Button variant="outline" onClick={onClose} className="flex-1"><X className="w-4 h-4 mr-2" />Close</Button>
-          <Button onClick={handlePrint} className="flex-1"><Printer className="w-4 h-4 mr-2" />Print</Button>
+        <div className="flex flex-col gap-2 mt-4 print:hidden">
+          <Button
+            variant={isPrinterConnected() ? "outline" : "default"}
+            onClick={handleConnect}
+            disabled={connecting || isPrinterConnected()}
+            className="w-full"
+          >
+            <Bluetooth className="w-4 h-4 mr-2" />
+            {isPrinterConnected() ? "Printer Connected" : connecting ? "Connecting..." : "Connect Bluetooth Printer"}
+          </Button>
+
+          <Button onClick={handleBluetoothPrint} disabled={printing || !isPrinterConnected()} className="w-full">
+            <Printer className="w-4 h-4 mr-2" />
+            {printing ? "Printing..." : "Print via Bluetooth"}
+          </Button>
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleBrowserPrint} className="flex-1">
+              <Printer className="w-4 h-4 mr-1" /> Browser Print
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
         <style>{`
           @media print {

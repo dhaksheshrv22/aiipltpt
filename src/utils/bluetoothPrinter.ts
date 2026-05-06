@@ -409,3 +409,81 @@ export async function printExitReceipt(receipt: {
 
   await sendToPrinter(data);
 }
+
+export async function printMonthlyPass(pass: {
+  pass_id: string;
+  vehicle_number: string;
+  owner_name?: string;
+  owner_mobile: string;
+  num_wheels: number;
+  pricing_category: string;
+  pass_start_date: string;
+  pass_expiry_date: string;
+  amount: number;
+  payment_status: string;
+}): Promise<void> {
+  const fmtDate = (d: string) =>
+    new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+
+  const status =
+    new Date(pass.pass_expiry_date).getTime() >= new Date().setHours(0, 0, 0, 0)
+      ? "ACTIVE"
+      : "EXPIRED";
+
+  const headerBlock = concatBytes(
+    COMMANDS.INIT,
+    COMMANDS.CENTER,
+    COMMANDS.BOLD_ON,
+    textToBytes("AIIPL TRUCK PARKING TERMINAL\n"),
+    COMMANDS.BOLD_OFF,
+    COMMANDS.LINE,
+    dashedLine(),
+    COMMANDS.CENTER,
+    COMMANDS.LARGE,
+    textToBytes("MONTHLY PASS\n"),
+    COMMANDS.NORMAL_SIZE,
+    COMMANDS.LINE,
+    dashedLine(),
+    COMMANDS.LEFT,
+    textToBytes(`Pass ID  : ${pass.pass_id}\n`),
+    dashedLine(),
+    COMMANDS.CENTER,
+    COMMANDS.DOUBLE_HEIGHT,
+    COMMANDS.BOLD_ON,
+    textToBytes(`${pass.vehicle_number}\n`),
+    COMMANDS.BOLD_OFF,
+    COMMANDS.NORMAL_SIZE,
+    COMMANDS.LINE,
+    dashedLine(),
+    COMMANDS.LEFT,
+    ...(pass.owner_name ? [textToBytes(`Owner    : ${pass.owner_name}\n`)] : []),
+    textToBytes(`Mobile   : ${pass.owner_mobile}\n`),
+    textToBytes(`Wheels   : ${pass.num_wheels} (${pass.pricing_category})\n`),
+    dashedLine(),
+    textToBytes(`Start    : ${fmtDate(pass.pass_start_date)}\n`),
+    textToBytes(`Expiry   : ${fmtDate(pass.pass_expiry_date)}\n`),
+    textToBytes(`Amount   : Rs.${pass.amount}\n`),
+    textToBytes(`Payment  : ${pass.payment_status}\n`),
+    textToBytes(`Status   : ${status}\n`),
+    dashedLine(),
+  );
+
+  const barcodeBlock = concatBytes(
+    COMMANDS.CENTER,
+    await barcodeBytes(pass.pass_id),
+    dashedLine(),
+  );
+
+  const footerBlock = concatBytes(
+    COMMANDS.CENTER,
+    COMMANDS.BOLD_ON,
+    textToBytes("VALID FOR 30 DAYS\n"),
+    textToBytes("Show at entry & exit\n"),
+    COMMANDS.BOLD_OFF,
+    dashedLine(),
+    COMMANDS.FEED,
+    COMMANDS.CUT,
+  );
+
+  await sendPrintJob(headerBlock, barcodeBlock, footerBlock);
+}
