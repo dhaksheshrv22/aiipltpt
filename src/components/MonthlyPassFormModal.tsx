@@ -22,6 +22,7 @@ interface Props {
 
 export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }: Props) {
   const isRenew = mode === "renew";
+  const receiptSettings = useReceiptSettings();
   const [vehicleNumber, setVehicleNumber] = useState(pass?.vehicle_number ?? "");
   const [ownerName, setOwnerName] = useState(pass?.owner_name ?? "");
   const [ownerMobile, setOwnerMobile] = useState(pass?.owner_mobile ?? "");
