@@ -477,11 +477,7 @@ export async function printMonthlyPass(pass: {
     dashedLine(),
   );
 
-  const barcodeBlock = concatBytes(
-    COMMANDS.CENTER,
-    await barcodeBytes(pass.pass_id),
-    dashedLine(),
-  );
+  const barcodeBlock = new Uint8Array();
 
   const footerBlock = concatBytes(
     COMMANDS.CENTER,
