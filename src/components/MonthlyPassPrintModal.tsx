@@ -8,7 +8,7 @@ import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { connectPrinter, isPrinterConnected, printMonthlyPass } from "@/utils/bluetoothPrinter";
 import { toast } from "sonner";
 import { Printer, X, Bluetooth } from "lucide-react";
-import Barcode from "react-barcode";
+
 
 interface Props {
   pass: any;
