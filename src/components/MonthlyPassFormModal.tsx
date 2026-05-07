@@ -11,6 +11,7 @@ import { formatINR } from "@/utils/pricing";
 import { addDays } from "date-fns";
 import { toast } from "sonner";
 import { Info, AlertCircle } from "lucide-react";
+import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 
 interface Props {
   mode: "create" | "renew";
