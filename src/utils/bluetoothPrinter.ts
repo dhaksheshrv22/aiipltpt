@@ -304,9 +304,7 @@ export async function printEntryToken(vehicle: {
       dashedLine(),
     );
 
-    const barcode = vehicle.tokenNumber
-      ? concatBytes(COMMANDS.CENTER, await barcodeBytes(vehicle.tokenNumber), dashedLine())
-      : new Uint8Array();
+    const barcode = new Uint8Array();
 
     const footer = concatBytes(
       COMMANDS.CENTER,
