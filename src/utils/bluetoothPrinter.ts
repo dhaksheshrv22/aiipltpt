@@ -260,65 +260,72 @@ export async function printEntryToken(vehicle: {
   const timeStr = entryDate.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
   const isPaid = vehicle.advance_paid || vehicle.payment_mode !== "Due";
 
-  const headerBlock = concatBytes(
-    COMMANDS.INIT,
-    COMMANDS.CENTER,
-    COMMANDS.BOLD_ON,
-    textToBytes("AIIPL TRUCK PARKING TERMINAL\n"),
-    COMMANDS.BOLD_OFF,
-    COMMANDS.LINE,
-    dashedLine(),
-    COMMANDS.CENTER,
-    COMMANDS.LARGE,
-    textToBytes("PARKING TOKEN\n"),
-    COMMANDS.NORMAL_SIZE,
-    COMMANDS.LINE,
-    dashedLine(),
-    COMMANDS.LEFT,
-    ...(vehicle.tokenNumber ? [textToBytes(`Token No.: ${vehicle.tokenNumber}\n`), dashedLine()] : []),
-    COMMANDS.CENTER,
-    COMMANDS.DOUBLE_HEIGHT,
-    COMMANDS.BOLD_ON,
-    textToBytes(`${vehicle.vehicle_number}\n`),
-    COMMANDS.BOLD_OFF,
-    COMMANDS.NORMAL_SIZE,
-    COMMANDS.LINE,
-    dashedLine(),
-    COMMANDS.LEFT,
-    textToBytes(`Wheels    : ${vehicle.num_wheels} (${vehicle.pricing_category})\n`),
-    textToBytes(`Rate      : Rs.${vehicle.daily_rate}/day\n`),
-    textToBytes(`Mobile No.: ${vehicle.driver_mobile}\n`),
-    textToBytes(`Entry Date: ${dateStr}\n`),
-    textToBytes(`Entry Time: ${timeStr}\n`),
-    ...(isPaid
-      ? [
-          textToBytes(`Pay Mode  : ${vehicle.payment_mode}\n`),
-          textToBytes(`Advance   : ${vehicle.advance_paid ? `Rs.${vehicle.advance_amount}` : "None"}\n`),
-        ]
-      : [textToBytes(`Payment   : Due\n`)]),
-    dashedLine(),
-  );
+  const buildCopy = async (copyLabel: string, isFirst: boolean): Promise<Uint8Array[]> => {
+    const header = concatBytes(
+      isFirst ? COMMANDS.INIT : new Uint8Array(),
+      COMMANDS.CENTER,
+      COMMANDS.BOLD_ON,
+      textToBytes("AIIPL TRUCK PARKING TERMINAL\n"),
+      COMMANDS.BOLD_OFF,
+      COMMANDS.LINE,
+      dashedLine(),
+      COMMANDS.CENTER,
+      COMMANDS.LARGE,
+      textToBytes("PARKING TOKEN\n"),
+      COMMANDS.NORMAL_SIZE,
+      COMMANDS.LINE,
+      COMMANDS.CENTER,
+      COMMANDS.BOLD_ON,
+      textToBytes(`** ${copyLabel} **\n`),
+      COMMANDS.BOLD_OFF,
+      dashedLine(),
+      COMMANDS.LEFT,
+      ...(vehicle.tokenNumber ? [textToBytes(`Token No.: ${vehicle.tokenNumber}\n`), dashedLine()] : []),
+      COMMANDS.CENTER,
+      COMMANDS.DOUBLE_HEIGHT,
+      COMMANDS.BOLD_ON,
+      textToBytes(`${vehicle.vehicle_number}\n`),
+      COMMANDS.BOLD_OFF,
+      COMMANDS.NORMAL_SIZE,
+      COMMANDS.LINE,
+      dashedLine(),
+      COMMANDS.LEFT,
+      textToBytes(`Wheels    : ${vehicle.num_wheels} (${vehicle.pricing_category})\n`),
+      textToBytes(`Rate      : Rs.${vehicle.daily_rate}/day\n`),
+      textToBytes(`Mobile No.: ${vehicle.driver_mobile}\n`),
+      textToBytes(`Entry Date: ${dateStr}\n`),
+      textToBytes(`Entry Time: ${timeStr}\n`),
+      ...(isPaid
+        ? [
+            textToBytes(`Pay Mode  : ${vehicle.payment_mode}\n`),
+            textToBytes(`Advance   : ${vehicle.advance_paid ? `Rs.${vehicle.advance_amount}` : "None"}\n`),
+          ]
+        : [textToBytes(`Payment   : Due\n`)]),
+      dashedLine(),
+    );
 
-  const barcodeBlock = vehicle.tokenNumber
-    ? concatBytes(
-        COMMANDS.CENTER,
-        await barcodeBytes(vehicle.tokenNumber),
-        dashedLine(),
-      )
-    : new Uint8Array();
+    const barcode = vehicle.tokenNumber
+      ? concatBytes(COMMANDS.CENTER, await barcodeBytes(vehicle.tokenNumber), dashedLine())
+      : new Uint8Array();
 
-  const footerBlock = concatBytes(
-    COMMANDS.CENTER,
-    COMMANDS.BOLD_ON,
-    textToBytes("KEEP THIS TOKEN SAFE\n"),
-    textToBytes("Required at exit\n"),
-    COMMANDS.BOLD_OFF,
-    dashedLine(),
-    COMMANDS.FEED,
-    COMMANDS.CUT,
-  );
+    const footer = concatBytes(
+      COMMANDS.CENTER,
+      COMMANDS.BOLD_ON,
+      textToBytes(copyLabel === "CUSTOMER COPY" ? "KEEP THIS TOKEN SAFE\n" : "OFFICE RECORD\n"),
+      textToBytes(copyLabel === "CUSTOMER COPY" ? "Required at exit\n" : "File for records\n"),
+      COMMANDS.BOLD_OFF,
+      dashedLine(),
+      COMMANDS.FEED,
+      COMMANDS.CUT,
+    );
 
-  await sendPrintJob(headerBlock, barcodeBlock, footerBlock);
+    return [header, barcode, footer];
+  };
+
+  const customer = await buildCopy("CUSTOMER COPY", true);
+  const organisation = await buildCopy("ORGANISATION COPY", false);
+
+  await sendPrintJob(...customer, ...organisation);
 }
 
 export async function printExitReceipt(receipt: {
