@@ -80,10 +80,6 @@ export default function MonthlyPassPrintModal({ pass, onClose }: Props) {
             <Badge variant={status === "Active" ? "default" : "destructive"} className="w-fit">{status}</Badge>
           </div>
 
-          <div className="flex justify-center pt-2">
-            <Barcode value={pass.pass_id} width={1.4} height={40} fontSize={10} />
-          </div>
-
           {settings.footerText && (
             <p className="text-center text-[10px] text-muted-foreground">{settings.footerText}</p>
           )}
