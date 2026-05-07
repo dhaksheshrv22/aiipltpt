@@ -8,7 +8,7 @@ import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { connectPrinter, isPrinterConnected, printMonthlyPass } from "@/utils/bluetoothPrinter";
 import { toast } from "sonner";
 import { Printer, X, Bluetooth } from "lucide-react";
-import Barcode from "react-barcode";
+
 
 interface Props {
   pass: any;
@@ -78,10 +78,6 @@ export default function MonthlyPassPrintModal({ pass, onClose }: Props) {
             <Badge variant={isPaid ? "default" : "destructive"} className="w-fit">{pass.payment_status}</Badge>
             <span className="text-muted-foreground">Status:</span>
             <Badge variant={status === "Active" ? "default" : "destructive"} className="w-fit">{status}</Badge>
-          </div>
-
-          <div className="flex justify-center pt-2">
-            <Barcode value={pass.pass_id} width={1.4} height={40} fontSize={10} />
           </div>
 
           {settings.footerText && (

@@ -7,7 +7,7 @@ import { connectPrinter, isPrinterConnected, printEntryToken } from "@/utils/blu
 import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { toast } from "sonner";
 import { Bluetooth, Printer, X, Check, Pencil, Save } from "lucide-react";
-import Barcode from "react-barcode";
+
 
 interface EntryTokenModalProps {
   vehicle: {
@@ -134,18 +134,6 @@ export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalPro
             ) : (
               <Row label="Payment" value="Due" />
             )}
-            <div className="border-t border-dashed my-2" />
-            <div className="flex justify-center my-2">
-              <Barcode
-                value={tokenNumber}
-                width={1.5}
-                height={40}
-                fontSize={10}
-                displayValue={false}
-                margin={0}
-              />
-            </div>
-            <p className="text-center text-[10px]">{tokenNumber}</p>
             <div className="border-t border-dashed my-2" />
             <p className="text-center text-xs font-semibold">KEEP THIS TOKEN SAFE</p>
             {receiptSettings.footerText && (
