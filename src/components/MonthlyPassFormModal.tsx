@@ -92,7 +92,7 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
       return;
     }
 
-    const passId = generatePassId();
+    const passId = generatePassId(receiptSettings.prefix);
     const start = new Date();
     const expiry = computeExpiry(start);
     const { data, error } = await supabase.from("monthly_passes").insert({
