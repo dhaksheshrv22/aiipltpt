@@ -9,10 +9,10 @@ export function getMonthlyPrice(numWheels: number) {
   return { ...p, monthlyAmount: p.dailyRate * MONTHLY_DAYS };
 }
 
-export function generatePassId() {
+export function generatePassId(prefix: string = "AIIPL") {
   const year = new Date().getFullYear();
-  const serial = Math.floor(10000 + Math.random() * 90000);
-  return `MP-${year}-${serial}`;
+  const serial = Math.floor(1000 + Math.random() * 9000);
+  return `${prefix}-MP-${year}-${String(serial).padStart(4, "0")}`;
 }
 
 export function getPassStatus(expiry: string | Date): "Active" | "Expired" {
