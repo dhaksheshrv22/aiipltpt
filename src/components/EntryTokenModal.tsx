@@ -7,7 +7,7 @@ import { connectPrinter, isPrinterConnected, printEntryToken } from "@/utils/blu
 import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { toast } from "sonner";
 import { Bluetooth, Printer, X, Check, Pencil, Save } from "lucide-react";
-import Barcode from "react-barcode";
+
 
 interface EntryTokenModalProps {
   vehicle: {
