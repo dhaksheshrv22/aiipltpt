@@ -26,7 +26,16 @@ export default function ActiveVehicles() {
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
 
-  useInterval(() => setTick(t => t + 1), 60000);
+  // Auto-refresh every 30s so rest-hours alerts surface promptly
+  useInterval(() => setTick(t => t + 1), 30000);
+
+  const { data: restHours = 4 } = useQuery({
+    queryKey: ["tempExitRestHours"],
+    queryFn: async () => {
+      const { data } = await supabase.from("app_settings").select("temp_exit_rest_hours" as any).limit(1).single();
+      return ((data as any)?.temp_exit_rest_hours as number) ?? 4;
+    },
+  });
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ["activeVehicles"],
@@ -34,7 +43,7 @@ export default function ActiveVehicles() {
       const { data } = await supabase.from("active_vehicles").select("*").order("entry_time", { ascending: false });
       return data ?? [];
     },
-    refetchInterval: 120000,
+    refetchInterval: 30000,
   });
 
   const handleScan = useCallback((code: string) => {
