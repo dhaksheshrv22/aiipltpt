@@ -44,9 +44,10 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <h1 className="sr-only">AIIPL Truck Parking Terminal — Admin Login</h1>
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2">
-          <img src={aiiplLogo} alt="AIIPL Truck Parking Terminal" className="mx-auto h-20 w-auto" />
+          <img src={aiiplLogo} alt="AIIPL Truck Parking Terminal logo" className="mx-auto h-20 w-auto" />
           <CardTitle className="text-2xl font-bold">AIIPL Truck Parking Terminal</CardTitle>
           <CardDescription>{isSignUp ? "Create your admin account" : "Sign in to manage your facility"}</CardDescription>
         </CardHeader>
