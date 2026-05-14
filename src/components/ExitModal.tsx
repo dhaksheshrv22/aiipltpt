@@ -29,16 +29,21 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
 
   const now = new Date();
   const isMonthlyPass = !!vehicle.is_monthly_pass;
-  const bill = isMonthlyPass
+  const rawBill = isMonthlyPass
     ? { totalHours: 0, billableDays: 0, grossAmount: 0, advanceDeduction: 0, balanceDue: 0 }
     : calculateBill(new Date(vehicle.entry_time), now, vehicle.daily_rate, vehicle.advance_paid ?? false);
+
+  const advanceAmt = vehicle.advance_amount ?? 0;
+  const tempExitPaid = vehicle.temp_exit_payment_amount ?? 0;
+  const balanceDue = Math.max(0, rawBill.grossAmount - advanceAmt - tempExitPaid);
+  const bill = { ...rawBill, balanceDue };
 
   const handleExit = async () => {
     setLoading(true);
     const totalHours = parseFloat(bill.totalHours.toFixed(2));
     const receiptNo = generateReceiptNumber(receiptSettings.prefix);
 
-    const historyRow = {
+    const historyRow: any = {
       vehicle_number: vehicle.vehicle_number,
       driver_mobile: vehicle.driver_mobile,
       num_wheels: vehicle.num_wheels,
@@ -49,29 +54,35 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
       total_hours: totalHours,
       total_days_billed: bill.billableDays,
       gross_amount: bill.grossAmount,
-      advance_paid_amount: vehicle.advance_amount ?? 0,
-      balance_amount: bill.balanceDue,
+      advance_paid_amount: advanceAmt,
+      balance_amount: balanceDue,
       payment_mode: vehicle.payment_mode,
       exit_payment_mode: exitPaymentMode,
       final_payment_status: "Paid",
+      temp_exit_time: vehicle.temp_exit_time ?? null,
+      return_time: vehicle.return_time ?? null,
+      temp_exit_payment_amount: tempExitPaid,
+      temp_exit_payment_mode: vehicle.temp_exit_payment_mode ?? null,
+      temp_exit_payment_at: vehicle.temp_exit_payment_at ?? null,
     };
 
     const { data: historyEntry, error: histErr } = await supabase.from("vehicle_history").insert(historyRow).select().single();
     if (histErr) { toast.error("Exit failed: " + histErr.message); setLoading(false); return; }
 
-    if (bill.balanceDue > 0) {
+    if (balanceDue > 0) {
       await supabase.from("payments").insert({
         history_vehicle_id: historyEntry.id,
         vehicle_number: vehicle.vehicle_number,
         payment_type: "Exit",
-        amount: bill.balanceDue,
+        amount: balanceDue,
         payment_mode: exitPaymentMode,
       });
     }
 
     await supabase.from("active_vehicles").delete().eq("id", vehicle.id);
 
-    setReceipt({ ...historyRow, receiptNo, balancePaid: bill.balanceDue, totalPaid: bill.grossAmount });
+    const grandTotal = advanceAmt + tempExitPaid + balanceDue;
+    setReceipt({ ...historyRow, receiptNo, balancePaid: balanceDue, totalPaid: grandTotal });
     setLoading(false);
     toast.success(`Vehicle ${vehicle.vehicle_number} exited successfully`);
   };
