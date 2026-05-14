@@ -11,6 +11,7 @@ import { formatINR, formatDate } from "@/utils/pricing";
 import { getPassStatus, daysUntilExpiry } from "@/utils/monthlyPass";
 import MonthlyPassFormModal from "@/components/MonthlyPassFormModal";
 import MonthlyPassPrintModal from "@/components/MonthlyPassPrintModal";
+import Seo from "@/components/Seo";
 
 export default function MonthlyPasses() {
   const [search, setSearch] = useState("");
@@ -52,6 +53,7 @@ export default function MonthlyPasses() {
 
   return (
     <div className="pb-20 md:pb-0">
+      <Seo title="Monthly Passes" description="Create, renew and manage monthly parking passes for heavy vehicles at the AIIPL Truck Parking Terminal — track active, expiring and expired passes." />
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h1 className="text-2xl font-bold">Monthly Pass Vehicles</h1>
         <Button onClick={() => setFormMode({ mode: "create" })}>
