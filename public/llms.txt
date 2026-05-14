@@ -1,0 +1,10 @@
+# AIIPL Truck Parking Terminal
+
+> Heavy-vehicle parking management terminal for commercial truck facilities — handles entries, exits, monthly passes, billing, and reports.
+
+AIIPL Truck Parking Terminal is an internal admin application used by parking-facility operators. It is not a public marketing site; most routes require an authenticated admin login.
+
+## Pages
+
+- [Home](/): Redirects to the operator dashboard.
+- [Login](/login): Admin sign-in for facility operators.
