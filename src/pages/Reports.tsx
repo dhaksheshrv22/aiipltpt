@@ -14,7 +14,7 @@ import { format, getYear, getMonth, startOfMonth, endOfMonth, startOfYear, endOf
 import { Download, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import Seo from "@/components/Seo";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -104,11 +104,15 @@ function exportPdf(title: string, head: string[], rows: (string | number)[][]) {
   doc.save(`${title.replace(/\s+/g, "_")}.pdf`);
 }
 
-function exportXlsx(name: string, head: string[], rows: (string | number)[][]) {
-  const ws = XLSX.utils.aoa_to_sheet([head, ...rows]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Report");
-  XLSX.writeFile(wb, `${name}.xlsx`);
+async function exportXlsx(name: string, head: string[], rows: (string | number)[][]) {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Report");
+  ws.addRow(head);
+  rows.forEach(r => ws.addRow(r));
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = `${name}.xlsx`; a.click(); URL.revokeObjectURL(url);
 }
 
 function exportCsv(name: string, head: string[], rows: (string | number)[][]) {
