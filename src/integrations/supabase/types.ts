@@ -33,6 +33,9 @@ export type Database = {
           payment_status: string
           pricing_category: string
           return_time: string | null
+          temp_exit_payment_amount: number
+          temp_exit_payment_at: string | null
+          temp_exit_payment_mode: string | null
           temp_exit_time: string | null
           vehicle_number: string
         }
@@ -54,6 +57,9 @@ export type Database = {
           payment_status: string
           pricing_category: string
           return_time?: string | null
+          temp_exit_payment_amount?: number
+          temp_exit_payment_at?: string | null
+          temp_exit_payment_mode?: string | null
           temp_exit_time?: string | null
           vehicle_number: string
         }
@@ -75,6 +81,9 @@ export type Database = {
           payment_status?: string
           pricing_category?: string
           return_time?: string | null
+          temp_exit_payment_amount?: number
+          temp_exit_payment_at?: string | null
+          temp_exit_payment_mode?: string | null
           temp_exit_time?: string | null
           vehicle_number?: string
         }
@@ -100,6 +109,7 @@ export type Database = {
           receipt_footer_text: string | null
           receipt_header_text: string | null
           receipt_prefix: string | null
+          temp_exit_rest_hours: number
         }
         Insert: {
           advance_warning_hours?: number | null
@@ -112,6 +122,7 @@ export type Database = {
           receipt_footer_text?: string | null
           receipt_header_text?: string | null
           receipt_prefix?: string | null
+          temp_exit_rest_hours?: number
         }
         Update: {
           advance_warning_hours?: number | null
@@ -124,6 +135,7 @@ export type Database = {
           receipt_footer_text?: string | null
           receipt_header_text?: string | null
           receipt_prefix?: string | null
+          temp_exit_rest_hours?: number
         }
         Relationships: []
       }
@@ -247,6 +259,11 @@ export type Database = {
           num_wheels: number
           payment_mode: string
           pricing_category: string
+          return_time: string | null
+          temp_exit_payment_amount: number
+          temp_exit_payment_at: string | null
+          temp_exit_payment_mode: string | null
+          temp_exit_time: string | null
           total_days_billed: number | null
           total_hours: number | null
           vehicle_number: string
@@ -266,6 +283,11 @@ export type Database = {
           num_wheels: number
           payment_mode: string
           pricing_category: string
+          return_time?: string | null
+          temp_exit_payment_amount?: number
+          temp_exit_payment_at?: string | null
+          temp_exit_payment_mode?: string | null
+          temp_exit_time?: string | null
           total_days_billed?: number | null
           total_hours?: number | null
           vehicle_number: string
@@ -285,6 +307,11 @@ export type Database = {
           num_wheels?: number
           payment_mode?: string
           pricing_category?: string
+          return_time?: string | null
+          temp_exit_payment_amount?: number
+          temp_exit_payment_at?: string | null
+          temp_exit_payment_mode?: string | null
+          temp_exit_time?: string | null
           total_days_billed?: number | null
           total_hours?: number | null
           vehicle_number?: string
