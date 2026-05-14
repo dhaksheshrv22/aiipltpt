@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Truck, Info, AlertCircle, BadgeCheck } from "lucide-react";
 import EntryTokenModal from "@/components/EntryTokenModal";
+import Seo from "@/components/Seo";
 
 export default function VehicleEntry() {
   const navigate = useNavigate();
@@ -143,6 +144,7 @@ export default function VehicleEntry() {
       />
     )}
     <div className="max-w-2xl mx-auto pb-20 md:pb-0">
+      <Seo title="New Vehicle Entry" description="Register a new heavy-vehicle entry with wheel category, driver mobile, payment mode and monthly-pass lookup at the AIIPL Truck Parking Terminal." />
       <h1 className="text-2xl font-bold mb-6">New Vehicle Entry</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">

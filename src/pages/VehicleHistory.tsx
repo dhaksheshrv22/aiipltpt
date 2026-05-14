@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Download, History as HistoryIcon } from "lucide-react";
 import ReceiptModal from "@/components/ReceiptModal";
+import Seo from "@/components/Seo";
 
 export default function VehicleHistory() {
   const [search, setSearch] = useState("");
@@ -52,6 +53,7 @@ export default function VehicleHistory() {
 
   return (
     <div className="space-y-4 pb-20 md:pb-0">
+      <Seo title="Vehicle History" description="Browse and export historical heavy-vehicle parking records, payments and receipts from the AIIPL Truck Parking Terminal." />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Vehicle History</h1>
         <Button variant="outline" size="sm" onClick={exportCSV}><Download className="w-4 h-4 mr-1" /> CSV</Button>

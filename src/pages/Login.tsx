@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import aiiplLogo from "@/assets/aiipl-logo.png";
+import Seo from "@/components/Seo";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -44,6 +45,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Seo title="Admin Login" description="Sign in to AIIPL Truck Parking Terminal to manage heavy-vehicle entries, exits, monthly passes, billing and reports." />
       <h1 className="sr-only">AIIPL Truck Parking Terminal — Admin Login</h1>
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2">

@@ -8,6 +8,7 @@ import { isOverstay, formatINR, formatDateTime, formatDuration } from "@/utils/p
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format, subDays, startOfMonth, startOfDay, endOfDay } from "date-fns";
+import Seo from "@/components/Seo";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -82,6 +83,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
+      <Seo title="Dashboard" description="Live overview of active vehicles, today's revenue, overstay alerts and recent exits at the AIIPL Truck Parking Terminal." />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="flex gap-2">

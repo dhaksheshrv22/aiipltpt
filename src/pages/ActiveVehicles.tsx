@@ -14,6 +14,7 @@ import EditVehicleModal from "@/components/EditVehicleModal";
 import TempExitModal from "@/components/TempExitModal";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import { toast } from "sonner";
+import Seo from "@/components/Seo";
 
 export default function ActiveVehicles() {
   const [search, setSearch] = useState("");
@@ -64,6 +65,7 @@ export default function ActiveVehicles() {
 
   return (
     <div className="space-y-4 pb-20 md:pb-0">
+      <Seo title="Active Vehicles" description="View all heavy vehicles currently parked, with overstay alerts, temporary-exit tracking and exit processing for the AIIPL Truck Parking Terminal." />
       <h1 className="text-2xl font-bold">Active Vehicles</h1>
 
       {/* Alert for temp-out vehicles that exceeded time */}

@@ -15,6 +15,7 @@ import { Download, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-reac
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import Seo from "@/components/Seo";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const COLORS = ["hsl(217,91%,60%)", "hsl(142,71%,45%)", "hsl(38,92%,50%)", "hsl(0,72%,51%)", "hsl(280,60%,50%)", "hsl(180,60%,40%)"];
@@ -49,6 +50,7 @@ export default function Reports() {
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
+      <Seo title="Reports" description="Monthly and yearly revenue, occupancy, payment-mode and category reports for the AIIPL Truck Parking Terminal — exportable to PDF and Excel." />
       <div>
         <h1 className="text-2xl font-bold">Reports</h1>
         <p className="text-sm text-muted-foreground">Monthly and yearly performance insights</p>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Receipt } from "lucide-react";
+import Seo from "@/components/Seo";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -93,6 +94,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6 pb-20 md:pb-0">
+      <Seo title="Settings" description="Configure facility name, max stay limits, receipt format, and admin account settings for the AIIPL Truck Parking Terminal." />
       <h1 className="text-2xl font-bold">Settings</h1>
 
       <Card>
