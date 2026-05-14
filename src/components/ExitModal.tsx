@@ -124,22 +124,39 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
               <span>Duration:</span><span>{formatDuration(new Date(vehicle.entry_time), now)}</span>
               <span>Billable Days:</span><span>{bill.billableDays}</span>
               <span>Gross Amount:</span><span>{formatINR(bill.grossAmount)}</span>
-              {bill.advanceDeduction > 0 && (
+              {advanceAmt > 0 && (
                 <>
-                  <span>Advance Paid:</span><span className="text-success">−{formatINR(bill.advanceDeduction)}</span>
+                  <span>Advance Paid:</span><span className="text-success">−{formatINR(advanceAmt)}</span>
+                </>
+              )}
+              {tempExitPaid > 0 && (
+                <>
+                  <span>Paid at Temp Exit:</span><span className="text-success">−{formatINR(tempExitPaid)}</span>
                 </>
               )}
               <span className="font-bold text-base pt-1">Balance Due:</span>
-              <span className={`font-bold text-base pt-1 ${bill.balanceDue === 0 ? "text-success" : "text-destructive"}`}>
-                {formatINR(bill.balanceDue)}
+              <span className={`font-bold text-base pt-1 ${balanceDue === 0 ? "text-success" : "text-destructive"}`}>
+                {formatINR(balanceDue)}
               </span>
             </div>
-            {bill.balanceDue === 0 && bill.advanceDeduction > 0 && (
-              <p className="text-success text-xs mt-2">Advance fully covers this stay. No additional charge.</p>
+            {balanceDue === 0 && (advanceAmt > 0 || tempExitPaid > 0) && (
+              <p className="text-success text-xs mt-2">All charges already collected.</p>
             )}
           </div>
 
-          {bill.balanceDue > 0 && (
+          {(vehicle.temp_exit_time || vehicle.return_time) && (
+            <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 space-y-1 text-xs">
+              <p className="font-semibold text-warning">Temporary Exit Summary</p>
+              {vehicle.temp_exit_time && <p>Temp Exit: {formatDate(vehicle.temp_exit_time)} {formatTime(vehicle.temp_exit_time)}</p>}
+              {vehicle.return_time && <p>Re-entry: {formatDate(vehicle.return_time)} {formatTime(vehicle.return_time)}</p>}
+              {vehicle.temp_exit_time && vehicle.return_time && (
+                <p>Absence: {formatDuration(new Date(vehicle.temp_exit_time), new Date(vehicle.return_time))}</p>
+              )}
+              {tempExitPaid > 0 && <p>Paid: {formatINR(tempExitPaid)} ({vehicle.temp_exit_payment_mode})</p>}
+            </div>
+          )}
+
+          {balanceDue > 0 && (
             <div>
               <Label>Exit Payment Mode</Label>
               <RadioGroup value={exitPaymentMode} onValueChange={setExitPaymentMode} className="flex gap-4 mt-2">
