@@ -243,7 +243,7 @@ export default function VehicleEntry() {
         {pricing && (
           <Card className="bg-muted/50">
             <CardContent className="pt-6">
-              <h3 className="font-semibold mb-3">Entry Summary</h3>
+              <h2 className="font-semibold mb-3">Entry Summary</h2>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <span className="text-muted-foreground">Entry Time:</span>
                 <span>{formatDateTime(new Date())}</span>

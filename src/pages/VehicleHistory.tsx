@@ -102,7 +102,7 @@ export default function VehicleHistory() {
                       <Badge variant={r.final_payment_status === "Paid" ? "default" : "destructive"}>{r.final_payment_status}</Badge>
                     </td>
                     <td className="py-2">
-                      <Button variant="ghost" size="sm" onClick={() => setViewReceipt({
+                      <Button variant="ghost" size="sm" aria-label={`View receipt for ${r.vehicle_number}`} onClick={() => setViewReceipt({
                         ...r, receiptNo: `HVP-${r.id.slice(0, 8).toUpperCase()}`,
                         balancePaid: r.balance_amount, totalPaid: r.gross_amount
                       })}>📄</Button>

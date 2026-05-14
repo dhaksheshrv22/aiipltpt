@@ -95,7 +95,7 @@ export default function ActiveVehicles() {
           <Input placeholder="Search by vehicle or mobile..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => setScannerOpen(true)} title="Scan Barcode">
+          <Button variant="outline" size="icon" onClick={() => setScannerOpen(true)} title="Scan Barcode" aria-label="Scan vehicle barcode">
             <ScanBarcode className="w-5 h-5" />
           </Button>
           <Tabs value={filter} onValueChange={setFilter}>
