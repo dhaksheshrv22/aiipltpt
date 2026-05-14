@@ -14,6 +14,7 @@ import EditVehicleModal from "@/components/EditVehicleModal";
 import TempExitModal from "@/components/TempExitModal";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import { toast } from "sonner";
+import Seo from "@/components/Seo";
 
 export default function ActiveVehicles() {
   const [search, setSearch] = useState("");
@@ -64,6 +65,7 @@ export default function ActiveVehicles() {
 
   return (
     <div className="space-y-4 pb-20 md:pb-0">
+      <Seo title="Active Vehicles" description="View all heavy vehicles currently parked, with overstay alerts, temporary-exit tracking and exit processing for the AIIPL Truck Parking Terminal." />
       <h1 className="text-2xl font-bold">Active Vehicles</h1>
 
       {/* Alert for temp-out vehicles that exceeded time */}
@@ -95,7 +97,7 @@ export default function ActiveVehicles() {
           <Input placeholder="Search by vehicle or mobile..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => setScannerOpen(true)} title="Scan Barcode">
+          <Button variant="outline" size="icon" onClick={() => setScannerOpen(true)} title="Scan Barcode" aria-label="Scan vehicle barcode">
             <ScanBarcode className="w-5 h-5" />
           </Button>
           <Tabs value={filter} onValueChange={setFilter}>

@@ -54,9 +54,9 @@ export default function AppLayout() {
       <aside className={`fixed md:sticky top-0 left-0 z-50 h-screen w-64 bg-sidebar text-sidebar-foreground flex flex-col transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
         <div className="p-5 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="AIIPL" className="w-9 h-9 rounded-lg object-contain" />
+            <img src={logo} alt="AIIPL Logo" className="w-9 h-9 rounded-lg object-contain" />
             <div>
-              <h1 className="font-bold text-sm text-sidebar-foreground">AIIPL</h1>
+              <span className="font-bold text-sm text-sidebar-foreground block">AIIPL</span>
               <p className="text-xs text-sidebar-foreground/60">Truck Parking Terminal</p>
             </div>
           </div>
@@ -106,7 +106,7 @@ export default function AppLayout() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header className="sticky top-0 z-30 h-14 bg-card border-b flex items-center justify-between px-4 gap-4">
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(true)}>
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open navigation menu">
             <Menu className="w-5 h-5" />
           </Button>
 
