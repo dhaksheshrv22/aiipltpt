@@ -26,7 +26,16 @@ export default function ActiveVehicles() {
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
 
-  useInterval(() => setTick(t => t + 1), 60000);
+  // Auto-refresh every 30s so rest-hours alerts surface promptly
+  useInterval(() => setTick(t => t + 1), 30000);
+
+  const { data: restHours = 4 } = useQuery({
+    queryKey: ["tempExitRestHours"],
+    queryFn: async () => {
+      const { data } = await supabase.from("app_settings").select("temp_exit_rest_hours" as any).limit(1).single();
+      return ((data as any)?.temp_exit_rest_hours as number) ?? 4;
+    },
+  });
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ["activeVehicles"],
@@ -34,7 +43,7 @@ export default function ActiveVehicles() {
       const { data } = await supabase.from("active_vehicles").select("*").order("entry_time", { ascending: false });
       return data ?? [];
     },
-    refetchInterval: 120000,
+    refetchInterval: 30000,
   });
 
   const handleScan = useCallback((code: string) => {
@@ -63,29 +72,25 @@ export default function ActiveVehicles() {
   const now = new Date();
   const tempOutCount = vehicles.filter(v => v.is_temporarily_out).length;
 
+  // Rest-hours overstay alert: vehicle out longer than allowed rest hours
+  const restMs = restHours * 60 * 60 * 1000;
+  const overstayedTempOut = vehicles.filter(v => {
+    if (!v.is_temporarily_out || !v.temp_exit_time) return false;
+    return now.getTime() - new Date(v.temp_exit_time).getTime() > restMs;
+  });
+
   return (
     <div className="space-y-4 pb-20 md:pb-0">
       <Seo title="Active Vehicles" description="View all heavy vehicles currently parked, with overstay alerts, temporary-exit tracking and exit processing for the AIIPL Truck Parking Terminal." />
       <h1 className="text-2xl font-bold">Active Vehicles</h1>
 
-      {/* Alert for temp-out vehicles that exceeded time */}
-      {vehicles.filter(v => {
-        if (!v.is_temporarily_out) return false;
-        const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
-        const paidDays = v.advance_paid ? 1 : 0;
-        return paidDays > 0 && bill.totalHours > paidDays * 26;
-      }).length > 0 && (
-        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-destructive mt-0.5" />
+      {overstayedTempOut.length > 0 && (
+        <div className="bg-destructive/10 border-2 border-destructive rounded-lg p-4 flex items-start gap-3 animate-pulse">
+          <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-semibold text-destructive">Temporary Exit Alert!</p>
-            <p className="text-sm text-muted-foreground">
-              {vehicles.filter(v => {
-                if (!v.is_temporarily_out) return false;
-                const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
-                const paidDays = v.advance_paid ? 1 : 0;
-                return paidDays > 0 && bill.totalHours > paidDays * 26;
-              }).map(v => v.vehicle_number).join(", ")} — exceeded allowed return time.
+            <p className="font-bold text-destructive">⚠️ Temporary Exit Overstay Alert</p>
+            <p className="text-sm mt-1">
+              {overstayedTempOut.map(v => v.vehicle_number).join(", ")} — has NOT re-entered even after the allotted {restHours}h rest hours within their 24-hour period.
             </p>
           </div>
         </div>

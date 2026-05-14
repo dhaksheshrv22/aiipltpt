@@ -112,6 +112,32 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
 
           <div className="border-t border-dashed" />
 
+          {(receipt.temp_exit_time || receipt.return_time) && (
+            <>
+              <div className="space-y-1">
+                <p className="font-semibold text-center">— Temporary Exit Summary —</p>
+                {receipt.temp_exit_time && (
+                  <Row label="Temp Exit" value={`${formatDate(receipt.temp_exit_time)} ${formatTime(receipt.temp_exit_time)}`} />
+                )}
+                {receipt.return_time && (
+                  <Row label="Re-entry" value={`${formatDate(receipt.return_time)} ${formatTime(receipt.return_time)}`} />
+                )}
+                {receipt.temp_exit_time && receipt.return_time && (
+                  <Row label="Absence" value={formatDuration(new Date(receipt.temp_exit_time), new Date(receipt.return_time))} />
+                )}
+                {(receipt.temp_exit_payment_amount ?? 0) > 0 && (
+                  <>
+                    <Row label="Paid (Temp)" value={formatINR(receipt.temp_exit_payment_amount)} />
+                    {receipt.temp_exit_payment_at && (
+                      <Row label="Paid At" value={`${formatDate(receipt.temp_exit_payment_at)} ${formatTime(receipt.temp_exit_payment_at)}`} />
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="border-t border-dashed" />
+            </>
+          )}
+
           <div className="space-y-1">
             {editing ? (
               <>
@@ -123,6 +149,9 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
               <>
                 <Row label="Gross Amount" value={formatINR(parseInt(editGross) || receipt.gross_amount)} />
                 <Row label="Advance Paid" value={formatINR(parseInt(editAdvance) || 0)} />
+                {(receipt.temp_exit_payment_amount ?? 0) > 0 && (
+                  <Row label="Temp Exit Paid" value={formatINR(receipt.temp_exit_payment_amount)} />
+                )}
                 <Row label="Balance Paid" value={formatINR(parseInt(editBalance) || receipt.balancePaid)} />
               </>
             )}
