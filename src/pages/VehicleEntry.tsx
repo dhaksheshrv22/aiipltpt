@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getPricingDetails, getValidWheelCounts, formatINR, formatDateTime } from "@/utils/pricing";
+import { getPricingDetails, getValidWheelCounts, formatINR, formatDateTime, formatDate, formatDuration } from "@/utils/pricing";
 import { getPassStatus } from "@/utils/monthlyPass";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Truck, Info, AlertCircle, BadgeCheck } from "lucide-react";
+import { Truck, Info, AlertCircle, BadgeCheck, Repeat, ChevronDown, ChevronUp } from "lucide-react";
 import EntryTokenModal from "@/components/EntryTokenModal";
 import Seo from "@/components/Seo";
+
+interface HistorySuggestion {
+  vehicle_number: string;
+  num_wheels: number;
+  pricing_category: string;
+  driver_mobile: string;
+  entry_time: string;
+  exit_time: string;
+  visit_count: number;
+  all_visits: { entry_time: string; exit_time: string }[];
+}
 
 export default function VehicleEntry() {
   const navigate = useNavigate();
