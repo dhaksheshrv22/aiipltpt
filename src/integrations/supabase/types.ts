@@ -101,6 +101,7 @@ export type Database = {
         Row: {
           advance_warning_hours: number | null
           created_at: string | null
+          credit_limit_amount: number
           facility_name: string | null
           id: string
           max_stay_days: number | null
@@ -110,10 +111,13 @@ export type Database = {
           receipt_header_text: string | null
           receipt_prefix: string | null
           temp_exit_rest_hours: number
+          upi_id: string | null
+          upi_payee_name: string | null
         }
         Insert: {
           advance_warning_hours?: number | null
           created_at?: string | null
+          credit_limit_amount?: number
           facility_name?: string | null
           id?: string
           max_stay_days?: number | null
@@ -123,10 +127,13 @@ export type Database = {
           receipt_header_text?: string | null
           receipt_prefix?: string | null
           temp_exit_rest_hours?: number
+          upi_id?: string | null
+          upi_payee_name?: string | null
         }
         Update: {
           advance_warning_hours?: number | null
           created_at?: string | null
+          credit_limit_amount?: number
           facility_name?: string | null
           id?: string
           max_stay_days?: number | null
@@ -136,6 +143,8 @@ export type Database = {
           receipt_header_text?: string | null
           receipt_prefix?: string | null
           temp_exit_rest_hours?: number
+          upi_id?: string | null
+          upi_payee_name?: string | null
         }
         Relationships: []
       }
