@@ -214,9 +214,82 @@ export default function VehicleEntry() {
         <Card>
           <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Truck className="w-5 h-5" /> Vehicle Info</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="vehicleNumber">Vehicle Number</Label>
-              <Input id="vehicleNumber" value={vehicleNumber} onChange={e => setVehicleNumber(e.target.value.toUpperCase())} placeholder="MH-12-AB-1234" className="font-mono" required />
+            <div className="relative">
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Label htmlFor="vehicleNumber">Vehicle Number</Label>
+                  <Input
+                    id="vehicleNumber"
+                    value={vehicleNumber}
+                    onChange={e => { setVehicleNumber(e.target.value.toUpperCase()); setShowSuggestions(true); }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    placeholder="MH-12-AB-1234"
+                    className="font-mono"
+                    autoComplete="off"
+                    required
+                  />
+                </div>
+                {topMatch && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="h-10 whitespace-nowrap"
+                    onClick={() => fillFromHistory(topMatch)}
+                    title={`Re-enter ${topMatch.vehicle_number}`}
+                  >
+                    <Repeat className="w-3 h-3 mr-1" /> Repeat Last
+                  </Button>
+                )}
+              </div>
+
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute z-30 mt-1 w-full bg-popover border rounded-lg shadow-lg overflow-hidden">
+                  {suggestions.map((s) => (
+                    <button
+                      type="button"
+                      key={s.vehicle_number}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => fillFromHistory(s)}
+                      className="w-full text-left px-3 py-2 hover:bg-accent border-b last:border-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-semibold">{s.vehicle_number}</span>
+                        <span className="text-[10px] text-muted-foreground">{s.visit_count} visit{s.visit_count > 1 ? "s" : ""}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {s.pricing_category} · 📱 {s.driver_mobile}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Last visited: {formatDate(s.exit_time)} — stayed {formatDuration(new Date(s.entry_time), new Date(s.exit_time))}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {topMatch && topMatch.visit_count > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllVisits(v => !v)}
+                  className="text-xs text-primary mt-1 inline-flex items-center gap-1"
+                >
+                  {showAllVisits ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  {showAllVisits ? "Hide" : `View all ${topMatch.visit_count} visits`}
+                </button>
+              )}
+              {showAllVisits && topMatch && (
+                <div className="mt-2 text-xs space-y-1 bg-muted/50 p-2 rounded">
+                  {topMatch.all_visits.map((v, i) => (
+                    <div key={i} className="flex justify-between text-muted-foreground">
+                      <span>{formatDate(v.entry_time)} → {formatDate(v.exit_time)}</span>
+                      <span>{formatDuration(new Date(v.entry_time), new Date(v.exit_time))}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {activePass && (
                 <div className="mt-2 p-3 bg-success/10 border border-success/30 rounded-lg flex items-center gap-2">
                   <BadgeCheck className="w-4 h-4 text-success" />
