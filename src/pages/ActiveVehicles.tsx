@@ -8,11 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle } from "lucide-react";
+import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle, Wallet, ReceiptText, Flag } from "lucide-react";
 import ExitModal from "@/components/ExitModal";
 import EditVehicleModal from "@/components/EditVehicleModal";
 import TempExitModal from "@/components/TempExitModal";
 import BarcodeScanner from "@/components/BarcodeScanner";
+import PaymentModal from "@/components/PaymentModal";
+import LedgerModal from "@/components/LedgerModal";
+import { useUpiSettings } from "@/hooks/useUpiSettings";
 import { toast } from "sonner";
 import Seo from "@/components/Seo";
 
@@ -22,9 +25,12 @@ export default function ActiveVehicles() {
   const [exitVehicle, setExitVehicle] = useState<any>(null);
   const [editVehicle, setEditVehicle] = useState<any>(null);
   const [tempExitVehicle, setTempExitVehicle] = useState<{ vehicle: any; mode: "temp-exit" | "return" } | null>(null);
+  const [payVehicle, setPayVehicle] = useState<{ vehicle: any; outstanding: number } | null>(null);
+  const [ledgerVehicle, setLedgerVehicle] = useState<any>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
+  const { creditLimit } = useUpiSettings();
 
   // Auto-refresh every 30s so rest-hours alerts surface promptly
   useInterval(() => setTick(t => t + 1), 30000);
@@ -42,6 +48,23 @@ export default function ActiveVehicles() {
     queryFn: async () => {
       const { data } = await supabase.from("active_vehicles").select("*").order("entry_time", { ascending: false });
       return data ?? [];
+    },
+    refetchInterval: 30000,
+  });
+
+  // Sum payments per active vehicle for live outstanding balance
+  const { data: paidByVehicle = {} } = useQuery({
+    queryKey: ["paidByActiveVehicle"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("payments")
+        .select("vehicle_id, amount")
+        .not("vehicle_id", "is", null);
+      const map: Record<string, number> = {};
+      (data ?? []).forEach((p: any) => {
+        map[p.vehicle_id] = (map[p.vehicle_id] ?? 0) + (p.amount ?? 0);
+      });
+      return map;
     },
     refetchInterval: 30000,
   });
@@ -130,7 +153,12 @@ export default function ActiveVehicles() {
             const overstay = isOverstay(v.entry_time);
             const isTempOut = v.is_temporarily_out;
             const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
-            const borderColor = isTempOut
+            const paid = (paidByVehicle as Record<string, number>)[v.id] ?? 0;
+            const outstanding = Math.max(0, bill.grossAmount - paid);
+            const overLimit = creditLimit > 0 && outstanding > creditLimit;
+            const borderColor = overLimit
+              ? "border-l-destructive bg-destructive/5"
+              : isTempOut
               ? "border-l-warning bg-warning/5"
               : overstay
               ? "border-l-destructive bg-destructive/5"
@@ -145,6 +173,9 @@ export default function ActiveVehicles() {
                 <CardContent className="pt-5 space-y-3">
                   {/* Status badges */}
                   <div className="absolute top-3 right-3 flex gap-1">
+                    {overLimit && (
+                      <Badge variant="destructive" className="animate-pulse"><Flag className="w-3 h-3 mr-1" />OVER LIMIT</Badge>
+                    )}
                     {isTempOut && (
                       <Badge className="bg-warning text-warning-foreground animate-pulse">TEMP OUT</Badge>
                     )}
@@ -169,6 +200,12 @@ export default function ActiveVehicles() {
                       <span className="font-medium text-foreground">{formatDuration(new Date(v.entry_time), now)}</span>
                     </div>
                     <p className="font-semibold text-foreground">Est. Bill: {formatINR(bill.grossAmount)}</p>
+                    {paid > 0 && (
+                      <p className="text-success">Paid so far: {formatINR(paid)}</p>
+                    )}
+                    {outstanding > 0 && (
+                      <p className="text-destructive font-semibold">Outstanding: {formatINR(outstanding)}</p>
+                    )}
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     {v.advance_paid && <Badge className="bg-success text-success-foreground">Advance Paid</Badge>}
@@ -179,7 +216,13 @@ export default function ActiveVehicles() {
                       <Badge variant="outline" className="border-warning text-warning">Temporarily Out</Badge>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" onClick={() => setPayVehicle({ vehicle: v, outstanding })}>
+                      <Wallet className="w-3 h-3 mr-1" /> Add Payment
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
+                      <ReceiptText className="w-3 h-3 mr-1" /> Ledger
+                    </Button>
                     {!isTempOut ? (
                       <>
                         <Button variant="outline" size="sm" onClick={() => setEditVehicle(v)}>
@@ -239,6 +282,30 @@ export default function ActiveVehicles() {
             setTempExitVehicle(null);
             queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
             queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
+          }}
+        />
+      )}
+
+      {payVehicle && (
+        <PaymentModal
+          vehicle={payVehicle.vehicle}
+          outstanding={payVehicle.outstanding}
+          onClose={() => setPayVehicle(null)}
+          onComplete={() => {
+            queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
+          }}
+        />
+      )}
+
+      {ledgerVehicle && (
+        <LedgerModal
+          vehicle={ledgerVehicle}
+          onClose={() => setLedgerVehicle(null)}
+          onAddPayment={() => {
+            const bill = calculateBill(new Date(ledgerVehicle.entry_time), new Date(), ledgerVehicle.daily_rate, ledgerVehicle.advance_paid ?? false);
+            const paid = (paidByVehicle as Record<string, number>)[ledgerVehicle.id] ?? 0;
+            setPayVehicle({ vehicle: ledgerVehicle, outstanding: Math.max(0, bill.grossAmount - paid) });
+            setLedgerVehicle(null);
           }}
         />
       )}

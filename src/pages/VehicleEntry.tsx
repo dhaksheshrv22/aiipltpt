@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getPricingDetails, getValidWheelCounts, formatINR, formatDateTime } from "@/utils/pricing";
+import { getPricingDetails, getValidWheelCounts, formatINR, formatDateTime, formatDate, formatDuration } from "@/utils/pricing";
 import { getPassStatus } from "@/utils/monthlyPass";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Truck, Info, AlertCircle, BadgeCheck } from "lucide-react";
+import { Truck, Info, AlertCircle, BadgeCheck, Repeat, ChevronDown, ChevronUp } from "lucide-react";
 import EntryTokenModal from "@/components/EntryTokenModal";
 import Seo from "@/components/Seo";
+
+interface HistorySuggestion {
+  vehicle_number: string;
+  num_wheels: number;
+  pricing_category: string;
+  driver_mobile: string;
+  entry_time: string;
+  exit_time: string;
+  visit_count: number;
+  all_visits: { entry_time: string; exit_time: string }[];
+}
 
 export default function VehicleEntry() {
   const navigate = useNavigate();
@@ -29,10 +40,62 @@ export default function VehicleEntry() {
   const [entryToken, setEntryToken] = useState<any>(null);
   const [activePass, setActivePass] = useState<any>(null);
   const [expiredPass, setExpiredPass] = useState<any>(null);
+  const [suggestions, setSuggestions] = useState<HistorySuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showAllVisits, setShowAllVisits] = useState(false);
   const wheels = parseInt(numWheels) || 0;
   const pricing = wheels > 0 ? getPricingDetails(wheels) : null;
-  const isInvalidWheels = wheels > 0 && wheels !== 4 && wheels !== 6 && !(wheels >= 7);
   const showWheelError = numWheels !== "" && !pricing && wheels > 0;
+
+  const fillFromHistory = (s: HistorySuggestion) => {
+    setVehicleNumber(s.vehicle_number);
+    setNumWheels(String(s.num_wheels));
+    setDriverMobile(s.driver_mobile);
+    setShowSuggestions(false);
+    setShowAllVisits(false);
+    toast.success(`Pre-filled from last visit: ${formatDate(s.exit_time)}`);
+  };
+
+  // Vehicle history autosuggest (Feature 1)
+  useEffect(() => {
+    const q = vehicleNumber.toUpperCase().trim();
+    if (q.length < 3) { setSuggestions([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("vehicle_history")
+        .select("vehicle_number, num_wheels, pricing_category, driver_mobile, entry_time, exit_time")
+        .ilike("vehicle_number", `${q}%`)
+        .order("exit_time", { ascending: false })
+        .limit(40);
+      if (!data) { setSuggestions([]); return; }
+      // group by vehicle_number, keep latest
+      const map = new Map<string, HistorySuggestion>();
+      for (const r of data as any[]) {
+        const existing = map.get(r.vehicle_number);
+        if (!existing) {
+          map.set(r.vehicle_number, {
+            vehicle_number: r.vehicle_number,
+            num_wheels: r.num_wheels,
+            pricing_category: r.pricing_category,
+            driver_mobile: r.driver_mobile,
+            entry_time: r.entry_time,
+            exit_time: r.exit_time,
+            visit_count: 1,
+            all_visits: [{ entry_time: r.entry_time, exit_time: r.exit_time }],
+          });
+        } else {
+          existing.visit_count += 1;
+          existing.all_visits.push({ entry_time: r.entry_time, exit_time: r.exit_time });
+        }
+      }
+      setSuggestions(Array.from(map.values()).slice(0, 6));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [vehicleNumber]);
+
+  const topMatch = suggestions[0];
+
+
 
   // Look up monthly pass when vehicle number changes
   useEffect(() => {
@@ -151,9 +214,82 @@ export default function VehicleEntry() {
         <Card>
           <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Truck className="w-5 h-5" /> Vehicle Info</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="vehicleNumber">Vehicle Number</Label>
-              <Input id="vehicleNumber" value={vehicleNumber} onChange={e => setVehicleNumber(e.target.value.toUpperCase())} placeholder="MH-12-AB-1234" className="font-mono" required />
+            <div className="relative">
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Label htmlFor="vehicleNumber">Vehicle Number</Label>
+                  <Input
+                    id="vehicleNumber"
+                    value={vehicleNumber}
+                    onChange={e => { setVehicleNumber(e.target.value.toUpperCase()); setShowSuggestions(true); }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    placeholder="MH-12-AB-1234"
+                    className="font-mono"
+                    autoComplete="off"
+                    required
+                  />
+                </div>
+                {topMatch && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="h-10 whitespace-nowrap"
+                    onClick={() => fillFromHistory(topMatch)}
+                    title={`Re-enter ${topMatch.vehicle_number}`}
+                  >
+                    <Repeat className="w-3 h-3 mr-1" /> Repeat Last
+                  </Button>
+                )}
+              </div>
+
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute z-30 mt-1 w-full bg-popover border rounded-lg shadow-lg overflow-hidden">
+                  {suggestions.map((s) => (
+                    <button
+                      type="button"
+                      key={s.vehicle_number}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => fillFromHistory(s)}
+                      className="w-full text-left px-3 py-2 hover:bg-accent border-b last:border-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-semibold">{s.vehicle_number}</span>
+                        <span className="text-[10px] text-muted-foreground">{s.visit_count} visit{s.visit_count > 1 ? "s" : ""}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {s.pricing_category} · 📱 {s.driver_mobile}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Last visited: {formatDate(s.exit_time)} — stayed {formatDuration(new Date(s.entry_time), new Date(s.exit_time))}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {topMatch && topMatch.visit_count > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllVisits(v => !v)}
+                  className="text-xs text-primary mt-1 inline-flex items-center gap-1"
+                >
+                  {showAllVisits ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  {showAllVisits ? "Hide" : `View all ${topMatch.visit_count} visits`}
+                </button>
+              )}
+              {showAllVisits && topMatch && (
+                <div className="mt-2 text-xs space-y-1 bg-muted/50 p-2 rounded">
+                  {topMatch.all_visits.map((v, i) => (
+                    <div key={i} className="flex justify-between text-muted-foreground">
+                      <span>{formatDate(v.entry_time)} → {formatDate(v.exit_time)}</span>
+                      <span>{formatDuration(new Date(v.entry_time), new Date(v.exit_time))}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {activePass && (
                 <div className="mt-2 p-3 bg-success/10 border border-success/30 rounded-lg flex items-center gap-2">
                   <BadgeCheck className="w-4 h-4 text-success" />

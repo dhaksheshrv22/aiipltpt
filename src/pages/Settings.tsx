@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Receipt } from "lucide-react";
+import { Receipt, Smartphone } from "lucide-react";
 import Seo from "@/components/Seo";
 
 export default function SettingsPage() {
@@ -25,6 +25,11 @@ export default function SettingsPage() {
   const [receiptFooterText, setReceiptFooterText] = useState("Thank you for using our facility!");
   const [receiptContactInfo, setReceiptContactInfo] = useState("");
   const [receiptPrefix, setReceiptPrefix] = useState("AIIPL");
+
+  // UPI + credit settings
+  const [upiId, setUpiId] = useState("");
+  const [upiPayeeName, setUpiPayeeName] = useState("");
+  const [creditLimit, setCreditLimit] = useState(0);
 
   const { data: settings } = useQuery({
     queryKey: ["appSettings"],
@@ -43,8 +48,29 @@ export default function SettingsPage() {
       setReceiptFooterText((settings as any).receipt_footer_text ?? "Thank you for using our facility!");
       setReceiptContactInfo((settings as any).receipt_contact_info ?? "");
       setReceiptPrefix((settings as any).receipt_prefix ?? "AIIPL");
+      setUpiId((settings as any).upi_id ?? "");
+      setUpiPayeeName((settings as any).upi_payee_name ?? "");
+      setCreditLimit((settings as any).credit_limit_amount ?? 0);
     }
   }, [settings]);
+
+  const updateUpiSettings = useMutation({
+    mutationFn: async () => {
+      if (!settings) return;
+      const { error } = await supabase.from("app_settings").update({
+        upi_id: upiId,
+        upi_payee_name: upiPayeeName,
+        credit_limit_amount: creditLimit,
+      } as any).eq("id", settings.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Payment settings saved");
+      queryClient.invalidateQueries({ queryKey: ["appSettings"] });
+      queryClient.invalidateQueries({ queryKey: ["upiSettings"] });
+    },
+    onError: (e: any) => toast.error("Failed: " + e.message),
+  });
 
   const updateSettings = useMutation({
     mutationFn: async () => {
@@ -110,6 +136,33 @@ export default function SettingsPage() {
           </div>
           <Button onClick={() => updateSettings.mutate()} disabled={updateSettings.isPending}>
             {updateSettings.isPending ? "Saving..." : "Save Settings"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Smartphone className="w-5 h-5" /> Payment & UPI
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="upiId">UPI ID (VPA)</Label>
+            <Input id="upiId" value={upiId} onChange={e => setUpiId(e.target.value)} placeholder="yardname@okhdfcbank" />
+            <p className="text-xs text-muted-foreground mt-1">Used to generate dynamic UPI QR codes on receipts and payment screens.</p>
+          </div>
+          <div>
+            <Label htmlFor="upiPayee">UPI Payee Name</Label>
+            <Input id="upiPayee" value={upiPayeeName} onChange={e => setUpiPayeeName(e.target.value)} placeholder="AIIPL Truck Parking" />
+          </div>
+          <div>
+            <Label htmlFor="creditLimit">Credit Limit Alert (₹)</Label>
+            <Input id="creditLimit" type="number" min={0} value={creditLimit} onChange={e => setCreditLimit(parseInt(e.target.value) || 0)} placeholder="0 = disabled" />
+            <p className="text-xs text-muted-foreground mt-1">Sessions with outstanding balance over this amount are flagged red.</p>
+          </div>
+          <Button onClick={() => updateUpiSettings.mutate()} disabled={updateUpiSettings.isPending}>
+            {updateUpiSettings.isPending ? "Saving..." : "Save Payment Settings"}
           </Button>
         </CardContent>
       </Card>

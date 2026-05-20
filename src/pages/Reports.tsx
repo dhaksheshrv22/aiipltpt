@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatINR } from "@/utils/pricing";
+import { formatINR, calculateBill } from "@/utils/pricing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,9 +57,10 @@ export default function Reports() {
       </div>
 
       <Tabs defaultValue="monthly" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="monthly">Monthly Reports</TabsTrigger>
-          <TabsTrigger value="yearly">Yearly Reports</TabsTrigger>
+        <TabsList className="grid w-full max-w-2xl grid-cols-3">
+          <TabsTrigger value="monthly">Monthly</TabsTrigger>
+          <TabsTrigger value="yearly">Yearly</TabsTrigger>
+          <TabsTrigger value="dues">Outstanding Dues</TabsTrigger>
         </TabsList>
 
         <TabsContent value="monthly" className="mt-6">
@@ -69,7 +70,108 @@ export default function Reports() {
         <TabsContent value="yearly" className="mt-6">
           <YearlyReport payments={payments} history={history} years={years} />
         </TabsContent>
+
+        <TabsContent value="dues" className="mt-6">
+          <OutstandingDuesReport />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function OutstandingDuesReport() {
+  const { data: active = [] } = useQuery({
+    queryKey: ["outstandingDues"],
+    queryFn: async () => {
+      const { data } = await supabase.from("active_vehicles").select("*").order("entry_time", { ascending: true });
+      return data ?? [];
+    },
+    refetchInterval: 60_000,
+  });
+  const { data: paidByVehicle = {} } = useQuery({
+    queryKey: ["outstandingDuesPayments"],
+    queryFn: async () => {
+      const { data } = await supabase.from("payments").select("vehicle_id, amount").not("vehicle_id", "is", null);
+      const map: Record<string, number> = {};
+      (data ?? []).forEach((p: any) => { map[p.vehicle_id] = (map[p.vehicle_id] ?? 0) + (p.amount ?? 0); });
+      return map;
+    },
+    refetchInterval: 60_000,
+  });
+
+  const now = new Date();
+  const rows = (active as any[])
+    .filter(v => !v.is_monthly_pass)
+    .map(v => {
+      const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
+      const paid = (paidByVehicle as Record<string, number>)[v.id] ?? 0;
+      const balance = Math.max(0, bill.grossAmount - paid);
+      const days = Math.max(1, Math.ceil((now.getTime() - new Date(v.entry_time).getTime()) / (1000 * 60 * 60 * 24)));
+      return { v, paid, balance, gross: bill.grossAmount, days };
+    })
+    .filter(r => r.balance > 0)
+    .sort((a, b) => b.balance - a.balance);
+
+  const grandTotal = rows.reduce((s, r) => s + r.balance, 0);
+  const tableHead = ["Vehicle", "Category", "Entry", "Days", "Charged", "Paid", "Balance"];
+  const tableRows = rows.map(r => [
+    r.v.vehicle_number, r.v.pricing_category,
+    format(new Date(r.v.entry_time), "dd MMM yyyy"),
+    r.days, r.gross, r.paid, r.balance,
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <Card className="flex-1 min-w-[240px]">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Total Outstanding (active sessions)</p>
+            <p className="text-3xl font-bold text-destructive">{formatINR(grandTotal)}</p>
+            <p className="text-xs text-muted-foreground mt-1">{rows.length} vehicle{rows.length === 1 ? "" : "s"} with balance due</p>
+          </CardContent>
+        </Card>
+        <ExportButtons
+          onPdf={() => exportPdf("Outstanding Dues", tableHead, tableRows)}
+          onXlsx={() => exportXlsx("Outstanding_Dues", tableHead, tableRows)}
+          onCsv={() => exportCsv("Outstanding_Dues", tableHead, tableRows)}
+        />
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Unpaid / Partial Balances</CardTitle></CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-2 pr-3">Vehicle</th>
+                  <th className="pb-2 pr-3">Category</th>
+                  <th className="pb-2 pr-3">Entry</th>
+                  <th className="pb-2 pr-3">Days</th>
+                  <th className="pb-2 pr-3">Charged</th>
+                  <th className="pb-2 pr-3">Paid</th>
+                  <th className="pb-2">Balance Due</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr><td colSpan={7} className="py-6 text-center text-muted-foreground">No outstanding balances. 🎉</td></tr>
+                ) : rows.map(r => (
+                  <tr key={r.v.id} className="border-b last:border-0">
+                    <td className="py-2 pr-3 font-mono font-semibold">{r.v.vehicle_number}</td>
+                    <td className="py-2 pr-3">{r.v.pricing_category}</td>
+                    <td className="py-2 pr-3">{format(new Date(r.v.entry_time), "dd MMM yyyy")}</td>
+                    <td className="py-2 pr-3">{r.days}</td>
+                    <td className="py-2 pr-3">{formatINR(r.gross)}</td>
+                    <td className="py-2 pr-3 text-success">{formatINR(r.paid)}</td>
+                    <td className="py-2 font-bold text-destructive">{formatINR(r.balance)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
