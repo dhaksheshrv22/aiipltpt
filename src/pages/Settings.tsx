@@ -26,6 +26,11 @@ export default function SettingsPage() {
   const [receiptContactInfo, setReceiptContactInfo] = useState("");
   const [receiptPrefix, setReceiptPrefix] = useState("AIIPL");
 
+  // UPI + credit settings
+  const [upiId, setUpiId] = useState("");
+  const [upiPayeeName, setUpiPayeeName] = useState("");
+  const [creditLimit, setCreditLimit] = useState(0);
+
   const { data: settings } = useQuery({
     queryKey: ["appSettings"],
     queryFn: async () => {
