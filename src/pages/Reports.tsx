@@ -103,10 +103,7 @@ function OutstandingDuesReport() {
   const rows = (active as any[])
     .filter(v => !v.is_monthly_pass)
     .map(v => {
-      const bill = (() => {
-        const { calculateBill } = require("@/utils/pricing");
-        return calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
-      })();
+      const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
       const paid = (paidByVehicle as Record<string, number>)[v.id] ?? 0;
       const balance = Math.max(0, bill.grossAmount - paid);
       const days = Math.max(1, Math.ceil((now.getTime() - new Date(v.entry_time).getTime()) / (1000 * 60 * 60 * 24)));
