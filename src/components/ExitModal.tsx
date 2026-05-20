@@ -1,13 +1,17 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateBill, formatINR, formatDate, formatTime, formatDuration, generateReceiptNumber } from "@/utils/pricing";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import ReceiptModal from "@/components/ReceiptModal";
+import UpiQR from "@/components/UpiQR";
+import { AlertTriangle } from "lucide-react";
 
 interface ExitModalProps {
   vehicle: any;
@@ -15,7 +19,6 @@ interface ExitModalProps {
   onComplete: () => void;
 }
 
-// Fix category display - remove non-ASCII chars (Chinese chars from dash encoding)
 function cleanCategory(cat: string): string {
   if (!cat) return "";
   return cat.replace(/[^\x20-\x7E]/g, "-");
@@ -25,7 +28,20 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const [exitPaymentMode, setExitPaymentMode] = useState(vehicle.payment_mode);
   const [loading, setLoading] = useState(false);
   const [receipt, setReceipt] = useState<any>(null);
+  const [confirmDue, setConfirmDue] = useState(false);
   const receiptSettings = useReceiptSettings();
+
+  const { data: ledger = [] } = useQuery({
+    queryKey: ["ledger", vehicle.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("vehicle_id", vehicle.id)
+        .order("paid_at", { ascending: true });
+      return data ?? [];
+    },
+  });
 
   const now = new Date();
   const isMonthlyPass = !!vehicle.is_monthly_pass;
@@ -35,12 +51,19 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
 
   const advanceAmt = vehicle.advance_amount ?? 0;
   const tempExitPaid = vehicle.temp_exit_payment_amount ?? 0;
-  const balanceDue = Math.max(0, rawBill.grossAmount - advanceAmt - tempExitPaid);
-  const bill = { ...rawBill, balanceDue };
+  // ledger already includes advance + temp-exit + partial payments (inserted with vehicle_id)
+  const ledgerTotal = ledger.reduce((s: number, p: any) => s + (p.amount ?? 0), 0);
+  // Defensive: if ledger missed historical entries, fall back to known amounts
+  const totalPaidPre = Math.max(ledgerTotal, advanceAmt + tempExitPaid);
+  const balanceDue = Math.max(0, rawBill.grossAmount - totalPaidPre);
 
   const handleExit = async () => {
+    if (balanceDue > 0 && !confirmDue) {
+      toast.error("Confirm the outstanding balance before exit");
+      return;
+    }
     setLoading(true);
-    const totalHours = parseFloat(bill.totalHours.toFixed(2));
+    const totalHours = parseFloat(rawBill.totalHours.toFixed(2));
     const receiptNo = generateReceiptNumber(receiptSettings.prefix);
 
     const historyRow: any = {
@@ -52,13 +75,13 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
       entry_time: vehicle.entry_time,
       exit_time: now.toISOString(),
       total_hours: totalHours,
-      total_days_billed: bill.billableDays,
-      gross_amount: bill.grossAmount,
+      total_days_billed: rawBill.billableDays,
+      gross_amount: rawBill.grossAmount,
       advance_paid_amount: advanceAmt,
       balance_amount: balanceDue,
       payment_mode: vehicle.payment_mode,
       exit_payment_mode: exitPaymentMode,
-      final_payment_status: "Paid",
+      final_payment_status: balanceDue > 0 ? "Due" : "Paid",
       temp_exit_time: vehicle.temp_exit_time ?? null,
       return_time: vehicle.return_time ?? null,
       temp_exit_payment_amount: tempExitPaid,
@@ -79,12 +102,35 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
       });
     }
 
+    // Link the active-session payments to the history record for the full ledger
+    if (ledger.length > 0) {
+      await supabase
+        .from("payments")
+        .update({ history_vehicle_id: historyEntry.id })
+        .eq("vehicle_id", vehicle.id);
+    }
+
     await supabase.from("active_vehicles").delete().eq("id", vehicle.id);
 
-    const grandTotal = advanceAmt + tempExitPaid + balanceDue;
-    setReceipt({ ...historyRow, receiptNo, balancePaid: balanceDue, totalPaid: grandTotal });
+    const grandTotal = totalPaidPre + balanceDue;
+    setReceipt({
+      ...historyRow,
+      receiptNo,
+      balancePaid: balanceDue,
+      totalPaid: grandTotal,
+      ledger: [
+        ...ledger,
+        ...(balanceDue > 0 ? [{
+          id: "exit",
+          payment_type: "Exit",
+          payment_mode: exitPaymentMode,
+          amount: balanceDue,
+          paid_at: now.toISOString(),
+        }] : []),
+      ],
+    });
     setLoading(false);
-    toast.success(`Vehicle ${vehicle.vehicle_number} exited successfully`);
+    toast.success(`Vehicle ${vehicle.vehicle_number} exited`);
   };
 
   if (receipt) {
@@ -93,7 +139,7 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Process Exit — {vehicle.vehicle_number}</DialogTitle>
         </DialogHeader>
@@ -106,14 +152,10 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
             <span>{cleanCategory(vehicle.pricing_category)}</span>
             <span className="text-muted-foreground">Mobile No.:</span>
             <span>{vehicle.driver_mobile}</span>
-            <span className="text-muted-foreground">Entry Date:</span>
-            <span>{formatDate(vehicle.entry_time)}</span>
-            <span className="text-muted-foreground">Entry Time:</span>
-            <span>{formatTime(vehicle.entry_time)}</span>
-            <span className="text-muted-foreground">Exit Date:</span>
-            <span>{formatDate(now)}</span>
-            <span className="text-muted-foreground">Exit Time:</span>
-            <span>{formatTime(now)}</span>
+            <span className="text-muted-foreground">Entry:</span>
+            <span>{formatDate(vehicle.entry_time)} {formatTime(vehicle.entry_time)}</span>
+            <span className="text-muted-foreground">Exit:</span>
+            <span>{formatDate(now)} {formatTime(now)}</span>
             <span className="text-muted-foreground">Duration:</span>
             <span className="font-medium">{formatDuration(new Date(vehicle.entry_time), now)}</span>
           </div>
@@ -121,56 +163,70 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
           <div className="bg-muted p-4 rounded-lg space-y-2 text-sm">
             <h4 className="font-semibold">Billing Breakdown</h4>
             <div className="grid grid-cols-2 gap-1">
-              <span>Duration:</span><span>{formatDuration(new Date(vehicle.entry_time), now)}</span>
-              <span>Billable Days:</span><span>{bill.billableDays}</span>
-              <span>Gross Amount:</span><span>{formatINR(bill.grossAmount)}</span>
-              {advanceAmt > 0 && (
-                <>
-                  <span>Advance Paid:</span><span className="text-success">−{formatINR(advanceAmt)}</span>
-                </>
-              )}
-              {tempExitPaid > 0 && (
-                <>
-                  <span>Paid at Temp Exit:</span><span className="text-success">−{formatINR(tempExitPaid)}</span>
-                </>
-              )}
+              <span>Billable Days:</span><span>{rawBill.billableDays}</span>
+              <span>Gross Amount:</span><span>{formatINR(rawBill.grossAmount)}</span>
+              <span>Already Paid:</span><span className="text-success">−{formatINR(totalPaidPre)}</span>
               <span className="font-bold text-base pt-1">Balance Due:</span>
               <span className={`font-bold text-base pt-1 ${balanceDue === 0 ? "text-success" : "text-destructive"}`}>
                 {formatINR(balanceDue)}
               </span>
             </div>
-            {balanceDue === 0 && (advanceAmt > 0 || tempExitPaid > 0) && (
-              <p className="text-success text-xs mt-2">All charges already collected.</p>
-            )}
           </div>
 
-          {(vehicle.temp_exit_time || vehicle.return_time) && (
-            <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 space-y-1 text-xs">
-              <p className="font-semibold text-warning">Temporary Exit Summary</p>
-              {vehicle.temp_exit_time && <p>Temp Exit: {formatDate(vehicle.temp_exit_time)} {formatTime(vehicle.temp_exit_time)}</p>}
-              {vehicle.return_time && <p>Re-entry: {formatDate(vehicle.return_time)} {formatTime(vehicle.return_time)}</p>}
-              {vehicle.temp_exit_time && vehicle.return_time && (
-                <p>Absence: {formatDuration(new Date(vehicle.temp_exit_time), new Date(vehicle.return_time))}</p>
-              )}
-              {tempExitPaid > 0 && <p>Paid: {formatINR(tempExitPaid)} ({vehicle.temp_exit_payment_mode})</p>}
+          {ledger.length > 0 && (
+            <div className="border rounded-lg overflow-hidden text-xs">
+              <table className="w-full">
+                <thead className="bg-muted">
+                  <tr><th className="p-2 text-left">When</th><th className="p-2 text-left">Type</th><th className="p-2 text-left">Mode</th><th className="p-2 text-right">Amount</th></tr>
+                </thead>
+                <tbody>
+                  {ledger.map((p: any) => (
+                    <tr key={p.id} className="border-t">
+                      <td className="p-2">{p.paid_at ? `${formatDate(p.paid_at)} ${formatTime(p.paid_at)}` : "—"}</td>
+                      <td className="p-2">{p.payment_type}</td>
+                      <td className="p-2">{p.payment_mode}</td>
+                      <td className="p-2 text-right font-medium">{formatINR(p.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
           {balanceDue > 0 && (
-            <div>
-              <Label>Exit Payment Mode</Label>
-              <RadioGroup value={exitPaymentMode} onValueChange={setExitPaymentMode} className="flex gap-4 mt-2">
-                {["Cash", "UPI", "Card"].map(m => (
-                  <div key={m} className="flex items-center space-x-2">
-                    <RadioGroupItem value={m} id={`exit-${m}`} />
-                    <Label htmlFor={`exit-${m}`} className="cursor-pointer">{m}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
+            <>
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-destructive mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-bold text-destructive">Balance Due: {formatINR(balanceDue)}</p>
+                  <p className="text-xs text-muted-foreground">Collect this amount before releasing the vehicle.</p>
+                </div>
+              </div>
+
+              <div>
+                <Label>Exit Payment Mode</Label>
+                <RadioGroup value={exitPaymentMode} onValueChange={setExitPaymentMode} className="flex gap-4 mt-2">
+                  {["Cash", "UPI", "Card"].map(m => (
+                    <div key={m} className="flex items-center space-x-2">
+                      <RadioGroupItem value={m} id={`exit-${m}`} />
+                      <Label htmlFor={`exit-${m}`} className="cursor-pointer">{m}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {exitPaymentMode === "UPI" && (
+                <UpiQR amount={balanceDue} vehicleNumber={vehicle.vehicle_number} />
+              )}
+
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <Checkbox checked={confirmDue} onCheckedChange={(v) => setConfirmDue(!!v)} />
+                <span>I have collected {formatINR(balanceDue)} from the driver.</span>
+              </label>
+            </>
           )}
 
-          <Button className="w-full" size="lg" onClick={handleExit} disabled={loading}>
+          <Button className="w-full" size="lg" onClick={handleExit} disabled={loading || (balanceDue > 0 && !confirmDue)}>
             {loading ? "Processing..." : "Complete Exit & Generate Receipt"}
           </Button>
         </div>
