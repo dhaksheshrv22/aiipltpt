@@ -52,6 +52,23 @@ export default function ActiveVehicles() {
     refetchInterval: 30000,
   });
 
+  // Sum payments per active vehicle for live outstanding balance
+  const { data: paidByVehicle = {} } = useQuery({
+    queryKey: ["paidByActiveVehicle"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("payments")
+        .select("vehicle_id, amount")
+        .not("vehicle_id", "is", null);
+      const map: Record<string, number> = {};
+      (data ?? []).forEach((p: any) => {
+        map[p.vehicle_id] = (map[p.vehicle_id] ?? 0) + (p.amount ?? 0);
+      });
+      return map;
+    },
+    refetchInterval: 30000,
+  });
+
   const handleScan = useCallback((code: string) => {
     setScannerOpen(false);
     toast.info(`Scanned: ${code}`);
