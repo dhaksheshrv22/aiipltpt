@@ -25,9 +25,12 @@ export default function ActiveVehicles() {
   const [exitVehicle, setExitVehicle] = useState<any>(null);
   const [editVehicle, setEditVehicle] = useState<any>(null);
   const [tempExitVehicle, setTempExitVehicle] = useState<{ vehicle: any; mode: "temp-exit" | "return" } | null>(null);
+  const [payVehicle, setPayVehicle] = useState<{ vehicle: any; outstanding: number } | null>(null);
+  const [ledgerVehicle, setLedgerVehicle] = useState<any>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
+  const { creditLimit } = useUpiSettings();
 
   // Auto-refresh every 30s so rest-hours alerts surface promptly
   useInterval(() => setTick(t => t + 1), 30000);
