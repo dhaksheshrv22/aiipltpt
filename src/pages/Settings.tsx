@@ -48,8 +48,29 @@ export default function SettingsPage() {
       setReceiptFooterText((settings as any).receipt_footer_text ?? "Thank you for using our facility!");
       setReceiptContactInfo((settings as any).receipt_contact_info ?? "");
       setReceiptPrefix((settings as any).receipt_prefix ?? "AIIPL");
+      setUpiId((settings as any).upi_id ?? "");
+      setUpiPayeeName((settings as any).upi_payee_name ?? "");
+      setCreditLimit((settings as any).credit_limit_amount ?? 0);
     }
   }, [settings]);
+
+  const updateUpiSettings = useMutation({
+    mutationFn: async () => {
+      if (!settings) return;
+      const { error } = await supabase.from("app_settings").update({
+        upi_id: upiId,
+        upi_payee_name: upiPayeeName,
+        credit_limit_amount: creditLimit,
+      } as any).eq("id", settings.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Payment settings saved");
+      queryClient.invalidateQueries({ queryKey: ["appSettings"] });
+      queryClient.invalidateQueries({ queryKey: ["upiSettings"] });
+    },
+    onError: (e: any) => toast.error("Failed: " + e.message),
+  });
 
   const updateSettings = useMutation({
     mutationFn: async () => {
