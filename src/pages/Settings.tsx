@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Receipt } from "lucide-react";
+import { Receipt, Smartphone } from "lucide-react";
 import Seo from "@/components/Seo";
 
 export default function SettingsPage() {
