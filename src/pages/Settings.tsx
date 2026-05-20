@@ -143,6 +143,33 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
+            <Smartphone className="w-5 h-5" /> Payment & UPI
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="upiId">UPI ID (VPA)</Label>
+            <Input id="upiId" value={upiId} onChange={e => setUpiId(e.target.value)} placeholder="yardname@okhdfcbank" />
+            <p className="text-xs text-muted-foreground mt-1">Used to generate dynamic UPI QR codes on receipts and payment screens.</p>
+          </div>
+          <div>
+            <Label htmlFor="upiPayee">UPI Payee Name</Label>
+            <Input id="upiPayee" value={upiPayeeName} onChange={e => setUpiPayeeName(e.target.value)} placeholder="AIIPL Truck Parking" />
+          </div>
+          <div>
+            <Label htmlFor="creditLimit">Credit Limit Alert (₹)</Label>
+            <Input id="creditLimit" type="number" min={0} value={creditLimit} onChange={e => setCreditLimit(parseInt(e.target.value) || 0)} placeholder="0 = disabled" />
+            <p className="text-xs text-muted-foreground mt-1">Sessions with outstanding balance over this amount are flagged red.</p>
+          </div>
+          <Button onClick={() => updateUpiSettings.mutate()} disabled={updateUpiSettings.isPending}>
+            {updateUpiSettings.isPending ? "Saving..." : "Save Payment Settings"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
             <Receipt className="w-5 h-5" /> Receipt Format
           </CardTitle>
         </CardHeader>
