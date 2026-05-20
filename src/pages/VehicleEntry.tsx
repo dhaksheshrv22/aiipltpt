@@ -40,10 +40,62 @@ export default function VehicleEntry() {
   const [entryToken, setEntryToken] = useState<any>(null);
   const [activePass, setActivePass] = useState<any>(null);
   const [expiredPass, setExpiredPass] = useState<any>(null);
+  const [suggestions, setSuggestions] = useState<HistorySuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showAllVisits, setShowAllVisits] = useState(false);
   const wheels = parseInt(numWheels) || 0;
   const pricing = wheels > 0 ? getPricingDetails(wheels) : null;
-  const isInvalidWheels = wheels > 0 && wheels !== 4 && wheels !== 6 && !(wheels >= 7);
   const showWheelError = numWheels !== "" && !pricing && wheels > 0;
+
+  const fillFromHistory = (s: HistorySuggestion) => {
+    setVehicleNumber(s.vehicle_number);
+    setNumWheels(String(s.num_wheels));
+    setDriverMobile(s.driver_mobile);
+    setShowSuggestions(false);
+    setShowAllVisits(false);
+    toast.success(`Pre-filled from last visit: ${formatDate(s.exit_time)}`);
+  };
+
+  // Vehicle history autosuggest (Feature 1)
+  useEffect(() => {
+    const q = vehicleNumber.toUpperCase().trim();
+    if (q.length < 3) { setSuggestions([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("vehicle_history")
+        .select("vehicle_number, num_wheels, pricing_category, driver_mobile, entry_time, exit_time")
+        .ilike("vehicle_number", `${q}%`)
+        .order("exit_time", { ascending: false })
+        .limit(40);
+      if (!data) { setSuggestions([]); return; }
+      // group by vehicle_number, keep latest
+      const map = new Map<string, HistorySuggestion>();
+      for (const r of data as any[]) {
+        const existing = map.get(r.vehicle_number);
+        if (!existing) {
+          map.set(r.vehicle_number, {
+            vehicle_number: r.vehicle_number,
+            num_wheels: r.num_wheels,
+            pricing_category: r.pricing_category,
+            driver_mobile: r.driver_mobile,
+            entry_time: r.entry_time,
+            exit_time: r.exit_time,
+            visit_count: 1,
+            all_visits: [{ entry_time: r.entry_time, exit_time: r.exit_time }],
+          });
+        } else {
+          existing.visit_count += 1;
+          existing.all_visits.push({ entry_time: r.entry_time, exit_time: r.exit_time });
+        }
+      }
+      setSuggestions(Array.from(map.values()).slice(0, 6));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [vehicleNumber]);
+
+  const topMatch = suggestions[0];
+
+
 
   // Look up monthly pass when vehicle number changes
   useEffect(() => {
