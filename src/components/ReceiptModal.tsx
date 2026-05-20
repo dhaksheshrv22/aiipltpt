@@ -158,6 +158,21 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
             <Row label="Payment Mode" value={receipt.exit_payment_mode || receipt.payment_mode} />
           </div>
 
+          {receipt.ledger && receipt.ledger.length > 0 && (
+            <>
+              <div className="border-t border-dashed" />
+              <div className="space-y-0.5">
+                <p className="font-semibold text-center">— Payment Ledger —</p>
+                {receipt.ledger.map((p: any, i: number) => (
+                  <div key={p.id ?? i} className="flex justify-between text-[11px]">
+                    <span>{p.paid_at ? `${formatDate(p.paid_at)} ${p.payment_type}` : p.payment_type}</span>
+                    <span>{p.payment_mode} · {formatINR(p.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
           <div className="border-t border-dashed" />
 
           <div className="text-center">
