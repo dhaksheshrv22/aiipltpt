@@ -10,8 +10,9 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, LineChart, Line, Legend,
 } from "recharts";
-import { format, getYear, getMonth, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { format, getYear, getMonth, startOfMonth, endOfMonth, startOfYear, endOfYear, startOfDay, endOfDay, eachDayOfInterval, subDays, isWithinInterval, parseISO } from "date-fns";
 import { Download, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
