@@ -57,12 +57,17 @@ export default function Reports() {
         <p className="text-sm text-muted-foreground">Monthly and yearly performance insights</p>
       </div>
 
-      <Tabs defaultValue="monthly" className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-3">
+      <Tabs defaultValue="daily" className="w-full">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsTrigger value="daily">Daily</TabsTrigger>
           <TabsTrigger value="monthly">Monthly</TabsTrigger>
           <TabsTrigger value="yearly">Yearly</TabsTrigger>
           <TabsTrigger value="dues">Outstanding Dues</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="daily" className="mt-6">
+          <DailyReport payments={payments} history={history} />
+        </TabsContent>
 
         <TabsContent value="monthly" className="mt-6">
           <MonthlyReport payments={payments} history={history} years={years} />
@@ -76,6 +81,151 @@ export default function Reports() {
           <OutstandingDuesReport />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function DailyReport({ payments, history }: { payments: Payment[]; history: History[] }) {
+  const today = format(new Date(), "yyyy-MM-dd");
+  const [date, setDate] = useState<string>(today);
+  const [rangeDays, setRangeDays] = useState<number>(7);
+
+  const selected = useMemo(() => parseISO(date), [date]);
+  const dayStart = startOfDay(selected);
+  const dayEnd = endOfDay(selected);
+
+  const dayPayments = payments.filter(p => p.paid_at && isWithinInterval(new Date(p.paid_at), { start: dayStart, end: dayEnd }));
+  const dayHistory = history.filter(h => isWithinInterval(new Date(h.exit_time), { start: dayStart, end: dayEnd }));
+  const revenue = dayPayments.reduce((s, p) => s + p.amount, 0);
+  const vehicles = dayHistory.length;
+  const avgBill = vehicles ? Math.round(revenue / vehicles) : 0;
+
+  const modeBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    dayPayments.forEach(p => map.set(p.payment_mode, (map.get(p.payment_mode) || 0) + p.amount));
+    return Array.from(map, ([name, value]) => ({ name, value }));
+  }, [dayPayments]);
+
+  const trend = useMemo(() => {
+    const end = endOfDay(selected);
+    const start = startOfDay(subDays(selected, rangeDays - 1));
+    return eachDayOfInterval({ start, end }).map(d => {
+      const dS = startOfDay(d), dE = endOfDay(d);
+      const rev = payments.filter(p => p.paid_at && isWithinInterval(new Date(p.paid_at), { start: dS, end: dE })).reduce((s, p) => s + p.amount, 0);
+      const veh = history.filter(h => isWithinInterval(new Date(h.exit_time), { start: dS, end: dE })).length;
+      return { day: format(d, "dd MMM"), revenue: rev, vehicles: veh };
+    });
+  }, [payments, history, selected, rangeDays]);
+
+  const txHead = ["Time", "Vehicle", "Type", "Mode", "Amount (INR)"];
+  const txRows = [...dayPayments]
+    .sort((a, b) => new Date(b.paid_at!).getTime() - new Date(a.paid_at!).getTime())
+    .map(p => [format(new Date(p.paid_at!), "HH:mm"), p.vehicle_number, p.payment_type, p.payment_mode, p.amount]);
+
+  const label = format(selected, "dd MMM yyyy");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex items-end gap-3 flex-wrap">
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Date</label>
+            <Input type="date" value={date} max={today} onChange={e => setDate(e.target.value)} className="w-44" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Trend Range</label>
+            <Select value={String(rangeDays)} onValueChange={v => setRangeDays(Number(v))}>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Last 7 days</SelectItem>
+                <SelectItem value="14">Last 14 days</SelectItem>
+                <SelectItem value="30">Last 30 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setDate(today)}>Today</Button>
+        </div>
+        <ExportButtons
+          onPdf={() => exportPdf(`Daily Report ${label}`, txHead, txRows)}
+          onXlsx={() => exportXlsx(`Daily_Report_${date}`, txHead, txRows)}
+          onCsv={() => exportCsv(`Daily_Report_${date}`, txHead, txRows)}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Revenue" value={formatINR(revenue)} sub={<span className="text-muted-foreground">{label}</span>} />
+        <StatCard label="Vehicles Exited" value={String(vehicles)} />
+        <StatCard label="Transactions" value={String(dayPayments.length)} />
+        <StatCard label="Avg Bill" value={formatINR(avgBill)} />
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Revenue — Last {rangeDays} Days</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={trend}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="day" className="text-xs" />
+                <YAxis className="text-xs" />
+                <Tooltip formatter={(v: number) => formatINR(v)} />
+                <Bar dataKey="revenue" fill="hsl(217,91%,60%)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Payment Mode — {label}</CardTitle></CardHeader>
+          <CardContent>
+            {modeBreakdown.length === 0 ? (
+              <p className="text-center text-muted-foreground py-12">No payments on this day.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie data={modeBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {modeBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => formatINR(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Transactions — {label}</CardTitle></CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-2 pr-3">Time</th>
+                  <th className="pb-2 pr-3">Vehicle</th>
+                  <th className="pb-2 pr-3">Type</th>
+                  <th className="pb-2 pr-3">Mode</th>
+                  <th className="pb-2">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {txRows.length === 0 ? (
+                  <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">No transactions on this day.</td></tr>
+                ) : txRows.map((r, i) => (
+                  <tr key={i} className="border-b last:border-0">
+                    <td className="py-2 pr-3">{r[0]}</td>
+                    <td className="py-2 pr-3 font-mono font-semibold">{r[1]}</td>
+                    <td className="py-2 pr-3">{r[2]}</td>
+                    <td className="py-2 pr-3">{r[3]}</td>
+                    <td className="py-2 font-bold">{formatINR(r[4] as number)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
