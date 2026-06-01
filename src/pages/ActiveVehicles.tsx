@@ -8,7 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle, Wallet, ReceiptText, Flag } from "lucide-react";
+import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle, Wallet, ReceiptText, Flag, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import ExitModal from "@/components/ExitModal";
 import EditVehicleModal from "@/components/EditVehicleModal";
 import TempExitModal from "@/components/TempExitModal";
