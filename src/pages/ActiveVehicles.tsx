@@ -8,7 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle, Wallet, ReceiptText, Flag } from "lucide-react";
+import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle, Wallet, ReceiptText, Flag, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import ExitModal from "@/components/ExitModal";
 import EditVehicleModal from "@/components/EditVehicleModal";
 import TempExitModal from "@/components/TempExitModal";
@@ -28,6 +38,8 @@ export default function ActiveVehicles() {
   const [payVehicle, setPayVehicle] = useState<{ vehicle: any; outstanding: number } | null>(null);
   const [ledgerVehicle, setLedgerVehicle] = useState<any>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [deleteVehicle, setDeleteVehicle] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
   const { creditLimit } = useUpiSettings();
@@ -223,6 +235,9 @@ export default function ActiveVehicles() {
                     <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
                       <ReceiptText className="w-3 h-3 mr-1" /> Ledger
                     </Button>
+                    <Button variant="outline" size="sm" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => setDeleteVehicle(v)} title="Delete entry (wrong data)">
+                      <Trash2 className="w-3 h-3 mr-1" /> Delete
+                    </Button>
                     {!isTempOut ? (
                       <>
                         <Button variant="outline" size="sm" onClick={() => setEditVehicle(v)}>
@@ -315,6 +330,44 @@ export default function ActiveVehicles() {
         onClose={() => setScannerOpen(false)}
         onScan={handleScan}
       />
+
+      <AlertDialog open={!!deleteVehicle} onOpenChange={(o) => !o && setDeleteVehicle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this vehicle entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes <span className="font-mono font-bold">{deleteVehicle?.vehicle_number}</span> and any payments recorded against it. Use this only to correct a wrong entry — it is not a check-out and will not appear in reports.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deleteVehicle) return;
+                setDeleting(true);
+                try {
+                  await supabase.from("payments").delete().eq("vehicle_id", deleteVehicle.id);
+                  const { error } = await supabase.from("active_vehicles").delete().eq("id", deleteVehicle.id);
+                  if (error) throw error;
+                  toast.success(`${deleteVehicle.vehicle_number} deleted`);
+                  setDeleteVehicle(null);
+                  queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
+                  queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
+                  queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
+                } catch (e: any) {
+                  toast.error("Delete failed: " + e.message);
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
