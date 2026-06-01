@@ -38,6 +38,8 @@ export default function ActiveVehicles() {
   const [payVehicle, setPayVehicle] = useState<{ vehicle: any; outstanding: number } | null>(null);
   const [ledgerVehicle, setLedgerVehicle] = useState<any>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [deleteVehicle, setDeleteVehicle] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
   const { creditLimit } = useUpiSettings();
