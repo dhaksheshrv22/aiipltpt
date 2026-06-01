@@ -330,6 +330,44 @@ export default function ActiveVehicles() {
         onClose={() => setScannerOpen(false)}
         onScan={handleScan}
       />
+
+      <AlertDialog open={!!deleteVehicle} onOpenChange={(o) => !o && setDeleteVehicle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this vehicle entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes <span className="font-mono font-bold">{deleteVehicle?.vehicle_number}</span> and any payments recorded against it. Use this only to correct a wrong entry — it is not a check-out and will not appear in reports.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deleteVehicle) return;
+                setDeleting(true);
+                try {
+                  await supabase.from("payments").delete().eq("vehicle_id", deleteVehicle.id);
+                  const { error } = await supabase.from("active_vehicles").delete().eq("id", deleteVehicle.id);
+                  if (error) throw error;
+                  toast.success(`${deleteVehicle.vehicle_number} deleted`);
+                  setDeleteVehicle(null);
+                  queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
+                  queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
+                  queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
+                } catch (e: any) {
+                  toast.error("Delete failed: " + e.message);
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
