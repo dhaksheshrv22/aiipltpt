@@ -59,7 +59,7 @@ export default function VehicleEntry() {
   // Vehicle history autosuggest (Feature 1)
   useEffect(() => {
     const q = vehicleNumber.toUpperCase().trim();
-    if (q.length < 3) { setSuggestions([]); return; }
+    if (q.length < 2) { setSuggestions([]); return; }
     const t = setTimeout(async () => {
       const { data } = await supabase
         .from("vehicle_history")
