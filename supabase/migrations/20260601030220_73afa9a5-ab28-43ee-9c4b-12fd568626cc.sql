@@ -1,0 +1,1 @@
+TRUNCATE TABLE public.payments, public.active_vehicles, public.vehicle_history, public.monthly_passes RESTART IDENTITY;
