@@ -12,6 +12,7 @@ import Reports from "./pages/Reports";
 import SettingsPage from "./pages/Settings";
 import MonthlyPasses from "./pages/MonthlyPasses";
 import VehicleStock from "./pages/VehicleStock";
+import Help from "./pages/Help";
 import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/history" element={<VehicleHistory />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/help" element={<Help />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

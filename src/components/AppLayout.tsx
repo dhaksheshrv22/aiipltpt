@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useInterval } from "@/hooks/useInterval";
 import {
-  LayoutDashboard, Truck, PlusCircle, History, BarChart3, Settings, LogOut, Menu, BadgeCheck, Boxes
+  LayoutDashboard, Truck, PlusCircle, History, BarChart3, Settings, LogOut, Menu, BadgeCheck, Boxes, BookOpen
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const navItems = [
   { to: "/history", icon: History, label: "Vehicle History" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
   { to: "/settings", icon: Settings, label: "Settings" },
+  { to: "/help", icon: BookOpen, label: "Help / सहायता" },
 ];
 
 export default function AppLayout() {
