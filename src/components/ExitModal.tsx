@@ -81,7 +81,7 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
       balance_amount: balanceDue,
       payment_mode: vehicle.payment_mode,
       exit_payment_mode: exitPaymentMode,
-      final_payment_status: balanceDue > 0 ? "Due" : "Paid",
+      final_payment_status: "Paid",
       temp_exit_time: vehicle.temp_exit_time ?? null,
       return_time: vehicle.return_time ?? null,
       temp_exit_payment_amount: tempExitPaid,
