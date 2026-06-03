@@ -237,6 +237,9 @@ export default function ActiveVehicles() {
                     <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
                       <ReceiptText className="w-3 h-3 mr-1" /> Ledger
                     </Button>
+                    <Button variant="outline" size="sm" onClick={() => setPrintVehicle(v)} title="Print parking token">
+                      <Printer className="w-3 h-3 mr-1" /> Print
+                    </Button>
                     <Button variant="outline" size="sm" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => setDeleteVehicle(v)} title="Delete entry (wrong data)">
                       <Trash2 className="w-3 h-3 mr-1" /> Delete
                     </Button>
