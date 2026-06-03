@@ -41,6 +41,7 @@ export default function ActiveVehicles() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [deleteVehicle, setDeleteVehicle] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
+  const [printVehicle, setPrintVehicle] = useState<any>(null);
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
   const { creditLimit } = useUpiSettings();
