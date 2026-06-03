@@ -58,7 +58,6 @@ export default function ActiveVehiclePrintModal({ vehicle, onClose }: ActiveVehi
         advance_paid: vehicle.advance_paid ?? false,
         advance_amount: vehicle.advance_amount ?? 0,
         payment_mode: vehicle.payment_mode,
-        payment_status: vehicle.payment_status,
       });
       toast.success("Token printed!");
     } catch (err: any) {
