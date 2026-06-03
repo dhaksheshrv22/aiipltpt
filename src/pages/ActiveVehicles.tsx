@@ -330,6 +330,13 @@ export default function ActiveVehicles() {
         />
       )}
 
+      {printVehicle && (
+        <ActiveVehiclePrintModal
+          vehicle={printVehicle}
+          onClose={() => setPrintVehicle(null)}
+        />
+      )}
+
       <BarcodeScanner
         open={scannerOpen}
         onClose={() => setScannerOpen(false)}
