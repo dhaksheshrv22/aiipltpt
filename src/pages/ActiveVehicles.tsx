@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle, Wallet, ReceiptText, Flag, Trash2 } from "lucide-react";
+import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle, Wallet, ReceiptText, Flag, Trash2, Printer } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +25,7 @@ import TempExitModal from "@/components/TempExitModal";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import PaymentModal from "@/components/PaymentModal";
 import LedgerModal from "@/components/LedgerModal";
+import ActiveVehiclePrintModal from "@/components/ActiveVehiclePrintModal";
 import { useUpiSettings } from "@/hooks/useUpiSettings";
 import { toast } from "sonner";
 import Seo from "@/components/Seo";
@@ -40,6 +41,7 @@ export default function ActiveVehicles() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [deleteVehicle, setDeleteVehicle] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
+  const [printVehicle, setPrintVehicle] = useState<any>(null);
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
   const { creditLimit } = useUpiSettings();
@@ -235,6 +237,9 @@ export default function ActiveVehicles() {
                     <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
                       <ReceiptText className="w-3 h-3 mr-1" /> Ledger
                     </Button>
+                    <Button variant="outline" size="sm" onClick={() => setPrintVehicle(v)} title="Print parking token">
+                      <Printer className="w-3 h-3 mr-1" /> Print
+                    </Button>
                     <Button variant="outline" size="sm" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => setDeleteVehicle(v)} title="Delete entry (wrong data)">
                       <Trash2 className="w-3 h-3 mr-1" /> Delete
                     </Button>
@@ -322,6 +327,13 @@ export default function ActiveVehicles() {
             setPayVehicle({ vehicle: ledgerVehicle, outstanding: Math.max(0, bill.grossAmount - paid) });
             setLedgerVehicle(null);
           }}
+        />
+      )}
+
+      {printVehicle && (
+        <ActiveVehiclePrintModal
+          vehicle={printVehicle}
+          onClose={() => setPrintVehicle(null)}
         />
       )}
 
