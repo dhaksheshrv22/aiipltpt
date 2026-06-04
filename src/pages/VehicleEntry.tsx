@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getPricingDetails, getValidWheelCounts, formatINR, formatDateTime, formatDate, formatDuration } from "@/utils/pricing";
