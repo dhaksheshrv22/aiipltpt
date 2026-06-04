@@ -403,7 +403,7 @@ export default function ActiveVehicles() {
         </AlertDialogContent>
       </AlertDialog>
 
-
+      <AlertDialog open={!!deleteVehicle} onOpenChange={(o) => !o && setDeleteVehicle(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Move this vehicle entry to Recycle Bin?</AlertDialogTitle>
