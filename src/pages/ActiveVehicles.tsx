@@ -350,9 +350,11 @@ export default function ActiveVehicles() {
       <AlertDialog open={!!deleteVehicle} onOpenChange={(o) => !o && setDeleteVehicle(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this vehicle entry?</AlertDialogTitle>
+            <AlertDialogTitle>Move this vehicle entry to Recycle Bin?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes <span className="font-mono font-bold">{deleteVehicle?.vehicle_number}</span> and any payments recorded against it. Use this only to correct a wrong entry — it is not a check-out and will not appear in reports.
+              <span className="font-mono font-bold">{deleteVehicle?.vehicle_number}</span> will be removed
+              from Active Vehicles and moved to the Recycle Bin, where you can restore it later or delete
+              it forever. This is not a check-out and will not appear in reports.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
