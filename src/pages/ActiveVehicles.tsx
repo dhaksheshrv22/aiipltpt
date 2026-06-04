@@ -347,7 +347,63 @@ export default function ActiveVehicles() {
         onScan={handleScan}
       />
 
-      <AlertDialog open={!!deleteVehicle} onOpenChange={(o) => !o && setDeleteVehicle(null)}>
+      <AlertDialog open={!!scanChoice} onOpenChange={(o) => !o && setScanChoice(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              <span className="font-mono-vehicle text-xl font-extrabold tracking-wider">
+                {scanChoice?.vehicle_number}
+              </span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              What would you like to do with this vehicle?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
+            <Button
+              variant="outline"
+              className="border-warning text-warning hover:bg-warning/10"
+              onClick={() => {
+                const v = scanChoice;
+                setScanChoice(null);
+                setSearch("");
+                setTempExitVehicle({ vehicle: v, mode: v.is_temporarily_out ? "return" : "temp-exit" });
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              {scanChoice?.is_temporarily_out ? "Return" : "Temp Exit"}
+            </Button>
+            <Button
+              onClick={() => {
+                const v = scanChoice;
+                setScanChoice(null);
+                setSearch("");
+                setExitVehicle(v);
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-1" /> Full Exit
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const v = scanChoice;
+                setScanChoice(null);
+                setSearch("");
+                setEditVehicle(v);
+              }}
+            >
+              <Pencil className="w-4 h-4 mr-1" /> Edit
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setScanChoice(null); setSearch(""); }}>
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Move this vehicle entry to Recycle Bin?</AlertDialogTitle>
