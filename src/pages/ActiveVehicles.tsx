@@ -42,6 +42,7 @@ export default function ActiveVehicles() {
   const [deleteVehicle, setDeleteVehicle] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
   const [printVehicle, setPrintVehicle] = useState<any>(null);
+  const [scanChoice, setScanChoice] = useState<any>(null);
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
   const { creditLimit } = useUpiSettings();
@@ -101,9 +102,10 @@ export default function ActiveVehicles() {
     return true;
   });
 
-  const autoExitFromScan = filtered.length === 1 && search.length > 3 && !exitVehicle;
-  if (autoExitFromScan && filtered[0]) {
-    setTimeout(() => setExitVehicle(filtered[0]), 0);
+  const autoChooseFromScan = filtered.length === 1 && search.length > 3 && !exitVehicle && !scanChoice && !editVehicle && !tempExitVehicle;
+  if (autoChooseFromScan && filtered[0]) {
+    const v = filtered[0];
+    setTimeout(() => setScanChoice(v), 0);
   }
 
   const now = new Date();
@@ -199,7 +201,7 @@ export default function ActiveVehicles() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-lg font-bold">{v.vehicle_number}</span>
+                    <span className="font-mono-vehicle text-2xl font-extrabold tracking-wider text-foreground">{v.vehicle_number}</span>
                     <Badge variant="secondary">{v.pricing_category}</Badge>
                   </div>
                   <div className="text-sm space-y-1 text-muted-foreground">
@@ -345,12 +347,70 @@ export default function ActiveVehicles() {
         onScan={handleScan}
       />
 
+      <AlertDialog open={!!scanChoice} onOpenChange={(o) => !o && setScanChoice(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              <span className="font-mono-vehicle text-xl font-extrabold tracking-wider">
+                {scanChoice?.vehicle_number}
+              </span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              What would you like to do with this vehicle?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
+            <Button
+              variant="outline"
+              className="border-warning text-warning hover:bg-warning/10"
+              onClick={() => {
+                const v = scanChoice;
+                setScanChoice(null);
+                setSearch("");
+                setTempExitVehicle({ vehicle: v, mode: v.is_temporarily_out ? "return" : "temp-exit" });
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              {scanChoice?.is_temporarily_out ? "Return" : "Temp Exit"}
+            </Button>
+            <Button
+              onClick={() => {
+                const v = scanChoice;
+                setScanChoice(null);
+                setSearch("");
+                setExitVehicle(v);
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-1" /> Full Exit
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const v = scanChoice;
+                setScanChoice(null);
+                setSearch("");
+                setEditVehicle(v);
+              }}
+            >
+              <Pencil className="w-4 h-4 mr-1" /> Edit
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setScanChoice(null); setSearch(""); }}>
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={!!deleteVehicle} onOpenChange={(o) => !o && setDeleteVehicle(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this vehicle entry?</AlertDialogTitle>
+            <AlertDialogTitle>Move this vehicle entry to Recycle Bin?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes <span className="font-mono font-bold">{deleteVehicle?.vehicle_number}</span> and any payments recorded against it. Use this only to correct a wrong entry — it is not a check-out and will not appear in reports.
+              <span className="font-mono font-bold">{deleteVehicle?.vehicle_number}</span> will be removed
+              from Active Vehicles and moved to the Recycle Bin, where you can restore it later or delete
+              it forever. This is not a check-out and will not appear in reports.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -362,14 +422,28 @@ export default function ActiveVehicles() {
                 if (!deleteVehicle) return;
                 setDeleting(true);
                 try {
+                  // Archive into recycle bin first
+                  const { data: pays } = await supabase
+                    .from("payments")
+                    .select("*")
+                    .eq("vehicle_id", deleteVehicle.id);
+                  await supabase.from("deleted_vehicles" as any).insert({
+                    original_id: deleteVehicle.id,
+                    vehicle_number: deleteVehicle.vehicle_number,
+                    driver_mobile: deleteVehicle.driver_mobile,
+                    entry_time: deleteVehicle.entry_time,
+                    vehicle_data: deleteVehicle,
+                    payments_data: pays ?? [],
+                  });
                   await supabase.from("payments").delete().eq("vehicle_id", deleteVehicle.id);
                   const { error } = await supabase.from("active_vehicles").delete().eq("id", deleteVehicle.id);
                   if (error) throw error;
-                  toast.success(`${deleteVehicle.vehicle_number} deleted`);
+                  toast.success(`${deleteVehicle.vehicle_number} moved to Recycle Bin`);
                   setDeleteVehicle(null);
                   queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
                   queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
                   queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
+                  queryClient.invalidateQueries({ queryKey: ["recycleBin"] });
                 } catch (e: any) {
                   toast.error("Delete failed: " + e.message);
                 } finally {

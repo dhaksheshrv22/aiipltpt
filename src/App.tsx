@@ -13,6 +13,7 @@ import SettingsPage from "./pages/Settings";
 import MonthlyPasses from "./pages/MonthlyPasses";
 import VehicleStock from "./pages/VehicleStock";
 import Help from "./pages/Help";
+import RecycleBin from "./pages/RecycleBin";
 import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/recycle-bin" element={<RecycleBin />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

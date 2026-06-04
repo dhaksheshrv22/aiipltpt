@@ -148,6 +148,42 @@ export type Database = {
         }
         Relationships: []
       }
+      deleted_vehicles: {
+        Row: {
+          deleted_at: string
+          deleted_reason: string | null
+          driver_mobile: string | null
+          entry_time: string | null
+          id: string
+          original_id: string
+          payments_data: Json
+          vehicle_data: Json
+          vehicle_number: string
+        }
+        Insert: {
+          deleted_at?: string
+          deleted_reason?: string | null
+          driver_mobile?: string | null
+          entry_time?: string | null
+          id?: string
+          original_id: string
+          payments_data?: Json
+          vehicle_data: Json
+          vehicle_number: string
+        }
+        Update: {
+          deleted_at?: string
+          deleted_reason?: string | null
+          driver_mobile?: string | null
+          entry_time?: string | null
+          id?: string
+          original_id?: string
+          payments_data?: Json
+          vehicle_data?: Json
+          vehicle_number?: string
+        }
+        Relationships: []
+      }
       monthly_passes: {
         Row: {
           amount: number
