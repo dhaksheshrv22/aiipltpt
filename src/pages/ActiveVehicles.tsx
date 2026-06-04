@@ -201,7 +201,7 @@ export default function ActiveVehicles() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-lg font-bold">{v.vehicle_number}</span>
+                    <span className="font-mono-vehicle text-2xl font-extrabold tracking-wider text-foreground">{v.vehicle_number}</span>
                     <Badge variant="secondary">{v.pricing_category}</Badge>
                   </div>
                   <div className="text-sm space-y-1 text-muted-foreground">
