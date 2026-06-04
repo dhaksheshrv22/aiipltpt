@@ -201,14 +201,17 @@ export default function VehicleEntry() {
   return (
     <>
     {entryToken && (
-      <EntryTokenModal
-        vehicle={entryToken}
-        onClose={() => {
-          setEntryToken(null);
-          navigate("/active-vehicles");
-        }}
-      />
+      <Suspense fallback={null}>
+        <EntryTokenModal
+          vehicle={entryToken}
+          onClose={() => {
+            setEntryToken(null);
+            navigate("/active-vehicles");
+          }}
+        />
+      </Suspense>
     )}
+
     <div className="max-w-2xl mx-auto pb-20 md:pb-0">
       <Seo title="New Vehicle Entry" description="Register a new heavy-vehicle entry with wheel category, driver mobile, payment mode and monthly-pass lookup at the AIIPL Truck Parking Terminal." />
       <h1 className="text-2xl font-bold mb-6">New Vehicle Entry</h1>
