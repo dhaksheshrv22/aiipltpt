@@ -167,14 +167,16 @@ export default function VehicleEntry() {
       return;
     }
 
-    // Record advance payment
+    // Record advance payment in background — don't block the token UI
     if (advancePaid && vehicle) {
-      await supabase.from("payments").insert({
+      supabase.from("payments").insert({
         vehicle_id: vehicle.id,
         vehicle_number: formattedVehicle,
         payment_type: "Advance",
         amount: advanceAmount,
         payment_mode: paymentMode,
+      }).then(({ error: pErr }) => {
+        if (pErr) toast.error("Advance payment log failed: " + pErr.message);
       });
     }
 
@@ -193,6 +195,7 @@ export default function VehicleEntry() {
       payment_mode: paymentMode,
       payment_status: finalPaymentStatus,
     });
+
   };
 
   return (
