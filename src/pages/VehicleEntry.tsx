@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getPricingDetails, getValidWheelCounts, formatINR, formatDateTime, formatDate, formatDuration } from "@/utils/pricing";
@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Truck, Info, AlertCircle, BadgeCheck, Repeat, ChevronDown, ChevronUp } from "lucide-react";
-import EntryTokenModal from "@/components/EntryTokenModal";
+const EntryTokenModal = lazy(() => import("@/components/EntryTokenModal"));
 import Seo from "@/components/Seo";
 
 interface HistorySuggestion {
@@ -167,14 +167,16 @@ export default function VehicleEntry() {
       return;
     }
 
-    // Record advance payment
+    // Record advance payment in background — don't block the token UI
     if (advancePaid && vehicle) {
-      await supabase.from("payments").insert({
+      supabase.from("payments").insert({
         vehicle_id: vehicle.id,
         vehicle_number: formattedVehicle,
         payment_type: "Advance",
         amount: advanceAmount,
         payment_mode: paymentMode,
+      }).then(({ error: pErr }) => {
+        if (pErr) toast.error("Advance payment log failed: " + pErr.message);
       });
     }
 
@@ -193,19 +195,23 @@ export default function VehicleEntry() {
       payment_mode: paymentMode,
       payment_status: finalPaymentStatus,
     });
+
   };
 
   return (
     <>
     {entryToken && (
-      <EntryTokenModal
-        vehicle={entryToken}
-        onClose={() => {
-          setEntryToken(null);
-          navigate("/active-vehicles");
-        }}
-      />
+      <Suspense fallback={null}>
+        <EntryTokenModal
+          vehicle={entryToken}
+          onClose={() => {
+            setEntryToken(null);
+            navigate("/active-vehicles");
+          }}
+        />
+      </Suspense>
     )}
+
     <div className="max-w-2xl mx-auto pb-20 md:pb-0">
       <Seo title="New Vehicle Entry" description="Register a new heavy-vehicle entry with wheel category, driver mobile, payment mode and monthly-pass lookup at the AIIPL Truck Parking Terminal." />
       <h1 className="text-2xl font-bold mb-6">New Vehicle Entry</h1>

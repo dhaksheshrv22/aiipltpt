@@ -64,6 +64,11 @@ export default function TempExitModal({ vehicle, mode, onClose, onComplete }: Te
       update.temp_exit_payment_mode = payMode;
       update.temp_exit_payment_at = tempExitISO;
     }
+    // If the bill is fully covered now (incl. advance + payments + this collection),
+    // mark status as Paid so the card no longer shows an outstanding flag.
+    if (suggestedDue - amt <= 0) {
+      update.payment_status = "Paid";
+    }
 
     const { error } = await supabase.from("active_vehicles").update(update).eq("id", vehicle.id);
     if (error) {
@@ -71,6 +76,7 @@ export default function TempExitModal({ vehicle, mode, onClose, onComplete }: Te
       setLoading(false);
       return;
     }
+
 
     if (amt > 0) {
       await supabase.from("payments").insert({
