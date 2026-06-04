@@ -102,9 +102,10 @@ export default function ActiveVehicles() {
     return true;
   });
 
-  const autoExitFromScan = filtered.length === 1 && search.length > 3 && !exitVehicle;
-  if (autoExitFromScan && filtered[0]) {
-    setTimeout(() => setExitVehicle(filtered[0]), 0);
+  const autoChooseFromScan = filtered.length === 1 && search.length > 3 && !exitVehicle && !scanChoice && !editVehicle && !tempExitVehicle;
+  if (autoChooseFromScan && filtered[0]) {
+    const v = filtered[0];
+    setTimeout(() => setScanChoice(v), 0);
   }
 
   const now = new Date();
