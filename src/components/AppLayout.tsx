@@ -20,6 +20,7 @@ const navItems = [
   { to: "/history", icon: History, label: "Vehicle History" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
   { to: "/settings", icon: Settings, label: "Settings" },
+  { to: "/recycle-bin", icon: Trash2, label: "Recycle Bin" },
   { to: "/help", icon: BookOpen, label: "Help / सहायता" },
 ];
 
