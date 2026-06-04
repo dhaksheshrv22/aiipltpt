@@ -39,6 +39,7 @@ const App = () => (
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/recycle-bin" element={<RecycleBin />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
