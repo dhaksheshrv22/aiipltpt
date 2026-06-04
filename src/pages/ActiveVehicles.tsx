@@ -364,14 +364,28 @@ export default function ActiveVehicles() {
                 if (!deleteVehicle) return;
                 setDeleting(true);
                 try {
+                  // Archive into recycle bin first
+                  const { data: pays } = await supabase
+                    .from("payments")
+                    .select("*")
+                    .eq("vehicle_id", deleteVehicle.id);
+                  await supabase.from("deleted_vehicles" as any).insert({
+                    original_id: deleteVehicle.id,
+                    vehicle_number: deleteVehicle.vehicle_number,
+                    driver_mobile: deleteVehicle.driver_mobile,
+                    entry_time: deleteVehicle.entry_time,
+                    vehicle_data: deleteVehicle,
+                    payments_data: pays ?? [],
+                  });
                   await supabase.from("payments").delete().eq("vehicle_id", deleteVehicle.id);
                   const { error } = await supabase.from("active_vehicles").delete().eq("id", deleteVehicle.id);
                   if (error) throw error;
-                  toast.success(`${deleteVehicle.vehicle_number} deleted`);
+                  toast.success(`${deleteVehicle.vehicle_number} moved to Recycle Bin`);
                   setDeleteVehicle(null);
                   queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
                   queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
                   queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
+                  queryClient.invalidateQueries({ queryKey: ["recycleBin"] });
                 } catch (e: any) {
                   toast.error("Delete failed: " + e.message);
                 } finally {
