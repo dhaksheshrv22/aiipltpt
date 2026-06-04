@@ -302,7 +302,9 @@ export default function ActiveVehicles() {
             setTempExitVehicle(null);
             queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
             queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
+            queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
           }}
+
         />
       )}
 
