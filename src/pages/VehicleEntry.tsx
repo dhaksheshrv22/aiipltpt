@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Truck, Info, AlertCircle, BadgeCheck, Repeat, ChevronDown, ChevronUp } from "lucide-react";
-import EntryTokenModal from "@/components/EntryTokenModal";
+const EntryTokenModal = lazy(() => import("@/components/EntryTokenModal"));
 import Seo from "@/components/Seo";
 
 interface HistorySuggestion {
