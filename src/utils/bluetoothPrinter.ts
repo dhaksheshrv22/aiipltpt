@@ -15,8 +15,10 @@ const COMMANDS = {
   DOUBLE_HEIGHT: new Uint8Array([ESC, 0x21, 0x10]),
   NORMAL_SIZE: new Uint8Array([ESC, 0x21, 0x00]),
   LARGE: new Uint8Array([ESC, 0x21, 0x30]), // Double width + height
-  CUT: new Uint8Array([GS, 0x56, 0x00]), // Full cut
-  FEED: new Uint8Array([ESC, 0x64, 0x04]), // Feed 4 lines
+  // Bold + double-height ("MEDIUM"): big & bold body text, still 32 chars/line
+  MEDIUM: new Uint8Array([ESC, 0x21, 0x18]),
+  CUT: new Uint8Array([GS, 0x56, 0x00]),
+  FEED: new Uint8Array([ESC, 0x64, 0x04]),
   LINE: new Uint8Array([LF]),
 };
 
