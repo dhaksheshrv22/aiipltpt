@@ -102,11 +102,7 @@ export default function ActiveVehicles() {
     return true;
   });
 
-  const autoChooseFromScan = filtered.length === 1 && search.length > 3 && !exitVehicle && !scanChoice && !editVehicle && !tempExitVehicle;
-  if (autoChooseFromScan && filtered[0]) {
-    const v = filtered[0];
-    setTimeout(() => setScanChoice(v), 0);
-  }
+  // Search no longer pops any dialog — list filters directly
 
   const now = new Date();
   const tempOutCount = vehicles.filter(v => v.is_temporarily_out).length;
