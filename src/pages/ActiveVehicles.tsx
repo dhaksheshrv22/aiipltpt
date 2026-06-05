@@ -42,7 +42,7 @@ export default function ActiveVehicles() {
   const [deleteVehicle, setDeleteVehicle] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
   const [printVehicle, setPrintVehicle] = useState<any>(null);
-  const [scanChoice, setScanChoice] = useState<any>(null);
+  
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
   const { creditLimit } = useUpiSettings();
@@ -102,11 +102,7 @@ export default function ActiveVehicles() {
     return true;
   });
 
-  const autoChooseFromScan = filtered.length === 1 && search.length > 3 && !exitVehicle && !scanChoice && !editVehicle && !tempExitVehicle;
-  if (autoChooseFromScan && filtered[0]) {
-    const v = filtered[0];
-    setTimeout(() => setScanChoice(v), 0);
-  }
+  // Search no longer pops any dialog — list filters directly
 
   const now = new Date();
   const tempOutCount = vehicles.filter(v => v.is_temporarily_out).length;
@@ -168,9 +164,13 @@ export default function ActiveVehicles() {
           {filtered.map(v => {
             const overstay = isOverstay(v.entry_time);
             const isTempOut = v.is_temporarily_out;
-            const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
+            // Freeze the bill at temp-exit time when vehicle is temporarily out,
+            // so outstanding doesn't grow (and clears properly after temp-exit payment).
+            const billEndTime = v.is_temporarily_out && v.temp_exit_time ? new Date(v.temp_exit_time) : now;
+            const bill = calculateBill(new Date(v.entry_time), billEndTime, v.daily_rate, v.advance_paid ?? false);
             const paid = (paidByVehicle as Record<string, number>)[v.id] ?? 0;
-            const outstanding = Math.max(0, bill.grossAmount - paid);
+            // If status is Paid, force-clear outstanding to avoid stale UI from bill drift.
+            const outstanding = v.payment_status === "Paid" ? 0 : Math.max(0, bill.grossAmount - paid);
             const overLimit = creditLimit > 0 && outstanding > creditLimit;
             const borderColor = overLimit
               ? "border-l-destructive bg-destructive/5"
@@ -347,61 +347,6 @@ export default function ActiveVehicles() {
         onScan={handleScan}
       />
 
-      <AlertDialog open={!!scanChoice} onOpenChange={(o) => !o && setScanChoice(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              <span className="font-mono-vehicle text-xl font-extrabold tracking-wider">
-                {scanChoice?.vehicle_number}
-              </span>
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              What would you like to do with this vehicle?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
-            <Button
-              variant="outline"
-              className="border-warning text-warning hover:bg-warning/10"
-              onClick={() => {
-                const v = scanChoice;
-                setScanChoice(null);
-                setSearch("");
-                setTempExitVehicle({ vehicle: v, mode: v.is_temporarily_out ? "return" : "temp-exit" });
-              }}
-            >
-              <LogOut className="w-4 h-4 mr-1" />
-              {scanChoice?.is_temporarily_out ? "Return" : "Temp Exit"}
-            </Button>
-            <Button
-              onClick={() => {
-                const v = scanChoice;
-                setScanChoice(null);
-                setSearch("");
-                setExitVehicle(v);
-              }}
-            >
-              <LogOut className="w-4 h-4 mr-1" /> Full Exit
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const v = scanChoice;
-                setScanChoice(null);
-                setSearch("");
-                setEditVehicle(v);
-              }}
-            >
-              <Pencil className="w-4 h-4 mr-1" /> Edit
-            </Button>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setScanChoice(null); setSearch(""); }}>
-              Cancel
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog open={!!deleteVehicle} onOpenChange={(o) => !o && setDeleteVehicle(null)}>
         <AlertDialogContent>
