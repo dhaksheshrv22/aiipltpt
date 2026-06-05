@@ -6,17 +6,26 @@ const GS = 0x1d;
 const LF = 0x0a;
 
 // ESC/POS Commands
+// Note: INIT now also enables bold and sets a comfortable inter-character
+// spacing (ESC SP n) so receipts print broad, dark and easy to read on
+// 58mm thermal paper without the operator having to tweak anything.
 const COMMANDS = {
-  INIT: new Uint8Array([ESC, 0x40]), // Initialize printer
-  CENTER: new Uint8Array([ESC, 0x61, 0x01]), // Center align
-  LEFT: new Uint8Array([ESC, 0x61, 0x00]), // Left align
+  INIT: new Uint8Array([
+    ESC, 0x40,        // Initialize printer
+    ESC, 0x20, 0x02,  // ESC SP 2 — add 2 dots of space between characters
+    ESC, 0x45, 0x01,  // ESC E 1 — bold ON (kept on for the whole receipt)
+  ]),
+  CENTER: new Uint8Array([ESC, 0x61, 0x01]),
+  LEFT: new Uint8Array([ESC, 0x61, 0x00]),
   BOLD_ON: new Uint8Array([ESC, 0x45, 0x01]),
   BOLD_OFF: new Uint8Array([ESC, 0x45, 0x00]),
   DOUBLE_HEIGHT: new Uint8Array([ESC, 0x21, 0x10]),
-  NORMAL_SIZE: new Uint8Array([ESC, 0x21, 0x00]),
-  LARGE: new Uint8Array([ESC, 0x21, 0x30]), // Double width + height
-  // Bold + double-height ("MEDIUM"): big & bold body text, still 32 chars/line
-  MEDIUM: new Uint8Array([ESC, 0x21, 0x18]),
+  NORMAL_SIZE: new Uint8Array([ESC, 0x21, 0x08]), // keep bold bit on
+  LARGE: new Uint8Array([GS, 0x21, 0x11]),        // double width + double height via GS !
+  // MEDIUM = double-height body text. GS ! 0x01 = normal width, double height.
+  // Combined with the always-on bold from INIT this gives broad, dark, very
+  // legible body text — matches the reference receipt photo.
+  MEDIUM: new Uint8Array([GS, 0x21, 0x01]),
   CUT: new Uint8Array([GS, 0x56, 0x00]),
   FEED: new Uint8Array([ESC, 0x64, 0x04]),
   LINE: new Uint8Array([LF]),
