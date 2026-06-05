@@ -164,9 +164,16 @@ export default function ActiveVehicles() {
           {filtered.map(v => {
             const overstay = isOverstay(v.entry_time);
             const isTempOut = v.is_temporarily_out;
-            const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
+            // Freeze the bill at temp-exit time when vehicle is temporarily out,
+            // so outstanding doesn't grow (and clears properly after temp-exit payment).
+            const billEndTime = v.is_temporarily_out && v.temp_exit_time ? new Date(v.temp_exit_time) : now;
+            const bill = calculateBill(new Date(v.entry_time), billEndTime, v.daily_rate, v.advance_paid ?? false);
             const paid = (paidByVehicle as Record<string, number>)[v.id] ?? 0;
-            const outstanding = Math.max(0, bill.grossAmount - paid);
+            const advanceCredit = v.advance_paid ? (v.advance_amount ?? 0) : 0;
+            const outstanding = Math.max(0, bill.grossAmount - paid - (advanceCredit && paid >= advanceCredit ? 0 : 0));
+            // Outstanding considers payments (which include the recorded Advance row).
+            // If marked Paid, force-clear to avoid stale UI from in-flight bill drift.
+            const effectiveOutstanding = v.payment_status === "Paid" ? 0 : Math.max(0, bill.grossAmount - paid);
             const overLimit = creditLimit > 0 && outstanding > creditLimit;
             const borderColor = overLimit
               ? "border-l-destructive bg-destructive/5"
