@@ -7,6 +7,7 @@ import { connectPrinter, isPrinterConnected, printExitReceipt } from "@/utils/bl
 import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { toast } from "sonner";
 import { Printer, X, Bluetooth, Pencil, Save } from "lucide-react";
+import UpiQR from "@/components/UpiQR";
 
 interface ReceiptModalProps {
   receipt: any;
