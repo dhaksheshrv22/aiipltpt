@@ -76,7 +76,7 @@ export default function Reports() {
         </TabsList>
 
         <TabsContent value="daily" className="mt-6">
-          <DailyReport payments={payments} history={history} />
+          <DailyReport payments={payments} history={history} active={active as ActiveVeh[]} />
         </TabsContent>
 
         <TabsContent value="monthly" className="mt-6">
