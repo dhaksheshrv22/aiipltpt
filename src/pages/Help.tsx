@@ -231,7 +231,7 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
 
 export default function Help() {
   return (
-    <div className="space-y-6 pb-24 md:pb-6 max-w-5xl mx-auto">
+    <div className="space-y-6 pb-24 md:pb-6 max-w-5xl mx-auto print-area">
       <Seo title="Operator Manual — Help" description="Step-by-step bilingual (English + Hindi) operator manual for the AIIPL Truck Parking Terminal — entry to exit." />
 
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 print:hidden">
