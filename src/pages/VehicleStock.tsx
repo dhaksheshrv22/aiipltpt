@@ -83,6 +83,112 @@ export default function VehicleStock() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="text-2xl font-bold">Vehicle Stock & Inventory</h1>
         <div className="flex items-center gap-2">
+  const restMs = restHours * 60 * 60 * 1000;
+  const now = new Date();
+
+  const buildPrintHtml = (mode: "all" | "summary" | string) => {
+    const ts = format(now, "dd/MM/yyyy hh:mm a");
+    const escapeHtml = (s: any) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+
+    const summaryRows = counts.map(c =>
+      `<tr><td>${escapeHtml(c.label)}</td><td>${escapeHtml(c.desc)}</td><td style="text-align:right;font-weight:700">${c.count}</td></tr>`
+    ).join("");
+    const summaryTable = `
+      <h3>Stock Summary</h3>
+      <table>
+        <thead><tr><th>Category</th><th>Description</th><th style="text-align:right">Count</th></tr></thead>
+        <tbody>${summaryRows}
+          <tr style="font-weight:700;background:#f1f5f9"><td colspan="2">Total Parked</td><td style="text-align:right">${parked.length}</td></tr>
+          <tr style="font-weight:700;background:#fef3c7"><td colspan="2">Temporarily Out</td><td style="text-align:right">${tempOut.length}</td></tr>
+        </tbody>
+      </table>`;
+
+    const vehicleTable = (title: string, list: any[]) => `
+      <h3>${escapeHtml(title)} (${list.length})</h3>
+      ${list.length === 0 ? '<p style="color:#666">No vehicles.</p>' : `
+      <table>
+        <thead><tr><th>#</th><th>Vehicle No.</th><th>Category</th><th style="text-align:center">Wheels</th><th>Entry Date</th><th>Entry Time</th><th>Payment</th></tr></thead>
+        <tbody>${list.map((v, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td style="font-family:monospace;font-weight:700">${escapeHtml(v.vehicle_number)}</td>
+            <td>${escapeHtml(v.pricing_category)}</td>
+            <td style="text-align:center">${v.num_wheels}</td>
+            <td>${format(new Date(v.entry_time), "dd/MM/yyyy")}</td>
+            <td>${format(new Date(v.entry_time), "hh:mm a")}</td>
+            <td>${escapeHtml(v.payment_status === "Due" ? "Due" : v.payment_mode)}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>`}`;
+
+    let body = "";
+    let heading = "Vehicle Stock Report";
+    if (mode === "summary") {
+      body = summaryTable;
+      heading = "Vehicle Stock — Summary";
+    } else if (mode === "all") {
+      const byCat = CATEGORIES.map(c => ({ c, list: parked.filter(v => c.match(v.num_wheels)) })).filter(g => g.list.length > 0);
+      body = summaryTable + byCat.map(g => vehicleTable(g.c.label, g.list)).join("");
+      if (tempOut.length > 0) body += vehicleTable("Temporarily Out", tempOut);
+    } else {
+      const cat = CATEGORIES.find(c => c.key === mode);
+      if (cat) {
+        const list = parked.filter(v => cat.match(v.num_wheels));
+        heading = `Vehicle Stock — ${cat.label}`;
+        body = vehicleTable(cat.label, list);
+      }
+    }
+
+    return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(heading)}</title>
+      <style>
+        body{font-family:Arial,sans-serif;padding:20px;color:#111}
+        h1{margin:0 0 4px 0;font-size:20px}
+        .meta{color:#666;font-size:12px;margin-bottom:16px}
+        h3{margin:18px 0 6px 0;font-size:14px;border-bottom:1px solid #ccc;padding-bottom:4px}
+        table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+        th,td{border:1px solid #ddd;padding:6px 8px;text-align:left}
+        thead{background:#f1f5f9}
+        @media print{button{display:none}}
+      </style></head><body>
+      <h1>AIIPL Truck Parking Terminal</h1>
+      <div class="meta"><strong>${escapeHtml(heading)}</strong> — Generated ${ts}</div>
+      ${body}
+      <script>window.onload=()=>{window.print();}</script>
+      </body></html>`;
+  };
+
+  const handlePrint = (mode: "all" | "summary" | string) => {
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) return;
+    w.document.write(buildPrintHtml(mode));
+    w.document.close();
+  };
+
+  return (
+    <div className="space-y-6 pb-20 md:pb-0">
+      <Seo title="Vehicle Stock & Inventory" description="Live count of all heavy vehicles parked at AIIPL Truck Parking Terminal, categorized by wheel count, with parked and temporarily-exited vehicle tabs." />
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="text-2xl font-bold">Vehicle Stock & Inventory</h1>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Printer className="w-4 h-4 mr-2" /> Print
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
+              <DropdownMenuLabel>Print Stock Report</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handlePrint("summary")}>Summary only</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePrint("all")}>Full stock (all categories)</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">By Category</DropdownMenuLabel>
+              {counts.map(c => (
+                <DropdownMenuItem key={c.key} disabled={c.count === 0} onClick={() => handlePrint(c.key)}>
+                  {c.label} <span className="ml-auto text-xs text-muted-foreground">{c.count}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Card className="px-4 py-2">
             <div className="flex items-center gap-2">
               <Truck className="w-5 h-5 text-primary" />
