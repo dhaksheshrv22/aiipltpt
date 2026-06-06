@@ -8,10 +8,9 @@ import { formatINR, formatDateTime, calculateBill, formatDuration } from "@/util
 interface LedgerModalProps {
   vehicle: any;
   onClose: () => void;
-  onAddPayment?: () => void;
 }
 
-export default function LedgerModal({ vehicle, onClose, onAddPayment }: LedgerModalProps) {
+export default function LedgerModal({ vehicle, onClose }: LedgerModalProps) {
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ["ledger", vehicle.id],
     queryFn: async () => {
