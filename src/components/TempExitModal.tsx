@@ -192,6 +192,15 @@ export default function TempExitModal({ vehicle, mode, onClose, onComplete }: Te
                   ))}
                 </RadioGroup>
               )}
+              {payMode === "UPI" && parseInt(collectAmount) > 0 && (
+                <div className="pt-2">
+                  <UpiQR
+                    amount={parseInt(collectAmount) || 0}
+                    vehicleNumber={vehicle.vehicle_number}
+                    driverMobile={vehicle.driver_mobile}
+                  />
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
                 Vehicle must return within {restHours} hour{restHours === 1 ? "" : "s"} of temp exit.
               </p>
