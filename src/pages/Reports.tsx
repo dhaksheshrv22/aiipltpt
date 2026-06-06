@@ -22,7 +22,8 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const COLORS = ["hsl(217,91%,60%)", "hsl(142,71%,45%)", "hsl(38,92%,50%)", "hsl(0,72%,51%)", "hsl(280,60%,50%)", "hsl(180,60%,40%)"];
 
 type Payment = { amount: number; paid_at: string | null; payment_mode: string; payment_type: string; vehicle_number: string };
-type History = { exit_time: string; pricing_category: string; gross_amount: number; total_hours: number | null; vehicle_number: string };
+type History = { entry_time: string; exit_time: string; pricing_category: string; gross_amount: number; total_hours: number | null; vehicle_number: string };
+type ActiveVeh = { vehicle_number: string; pricing_category: string; entry_time: string; is_temporarily_out: boolean; temp_exit_time: string | null; return_time: string | null };
 
 export default function Reports() {
   const { data: payments = [] } = useQuery({
