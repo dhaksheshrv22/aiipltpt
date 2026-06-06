@@ -307,27 +307,10 @@ export default function ActiveVehicles() {
         />
       )}
 
-      {payVehicle && (
-        <PaymentModal
-          vehicle={payVehicle.vehicle}
-          outstanding={payVehicle.outstanding}
-          onClose={() => setPayVehicle(null)}
-          onComplete={() => {
-            queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
-          }}
-        />
-      )}
-
       {ledgerVehicle && (
         <LedgerModal
           vehicle={ledgerVehicle}
           onClose={() => setLedgerVehicle(null)}
-          onAddPayment={() => {
-            const bill = calculateBill(new Date(ledgerVehicle.entry_time), new Date(), ledgerVehicle.daily_rate, ledgerVehicle.advance_paid ?? false);
-            const paid = (paidByVehicle as Record<string, number>)[ledgerVehicle.id] ?? 0;
-            setPayVehicle({ vehicle: ledgerVehicle, outstanding: Math.max(0, bill.grossAmount - paid) });
-            setLedgerVehicle(null);
-          }}
         />
       )}
 
