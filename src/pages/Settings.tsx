@@ -30,6 +30,7 @@ export default function SettingsPage() {
   const [upiId, setUpiId] = useState("");
   const [upiPayeeName, setUpiPayeeName] = useState("");
   const [creditLimit, setCreditLimit] = useState(0);
+  const [cashVarianceThreshold, setCashVarianceThreshold] = useState(100);
 
   const { data: settings } = useQuery({
     queryKey: ["appSettings"],
@@ -51,6 +52,7 @@ export default function SettingsPage() {
       setUpiId((settings as any).upi_id ?? "");
       setUpiPayeeName((settings as any).upi_payee_name ?? "");
       setCreditLimit((settings as any).credit_limit_amount ?? 0);
+      setCashVarianceThreshold((settings as any).cash_variance_threshold ?? 100);
     }
   }, [settings]);
 
@@ -61,6 +63,7 @@ export default function SettingsPage() {
         upi_id: upiId,
         upi_payee_name: upiPayeeName,
         credit_limit_amount: creditLimit,
+        cash_variance_threshold: cashVarianceThreshold,
       } as any).eq("id", settings.id);
       if (error) throw error;
     },
@@ -160,6 +163,11 @@ export default function SettingsPage() {
             <Label htmlFor="creditLimit">Credit Limit Alert (₹)</Label>
             <Input id="creditLimit" type="number" min={0} value={creditLimit} onChange={e => setCreditLimit(parseInt(e.target.value) || 0)} placeholder="0 = disabled" />
             <p className="text-xs text-muted-foreground mt-1">Sessions with outstanding balance over this amount are flagged red.</p>
+          </div>
+          <div>
+            <Label htmlFor="cashVar">Cash Variance Threshold (₹)</Label>
+            <Input id="cashVar" type="number" min={0} value={cashVarianceThreshold} onChange={e => setCashVarianceThreshold(parseInt(e.target.value) || 0)} placeholder="100" />
+            <p className="text-xs text-muted-foreground mt-1">Acceptable cash mismatch during shift-end reconciliation. Larger gaps are flagged red.</p>
           </div>
           <Button onClick={() => updateUpiSettings.mutate()} disabled={updateUpiSettings.isPending}>
             {updateUpiSettings.isPending ? "Saving..." : "Save Payment Settings"}
