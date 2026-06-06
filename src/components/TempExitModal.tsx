@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { formatDateTime, formatDuration, formatINR, calculateBill } from "@/utils/pricing";
 import { AlertTriangle, BadgeCheck, Wallet } from "lucide-react";
+import UpiQR from "@/components/UpiQR";
 
 interface TempExitModalProps {
   vehicle: any;
