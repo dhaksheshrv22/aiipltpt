@@ -95,14 +95,6 @@ export default function Reports() {
   );
 }
 
-function DailyReport({ payments, history }: { payments: Payment[]; history: History[] }) {
-  const today = format(new Date(), "yyyy-MM-dd");
-  const [date, setDate] = useState<string>(today);
-  const [rangeDays, setRangeDays] = useState<number>(7);
-
-  const selected = useMemo(() => parseISO(date), [date]);
-  const dayStart = startOfDay(selected);
-  const dayEnd = endOfDay(selected);
 
 function DailyReport({ payments, history, active }: { payments: Payment[]; history: History[]; active: ActiveVeh[] }) {
   const today = format(new Date(), "yyyy-MM-dd");
