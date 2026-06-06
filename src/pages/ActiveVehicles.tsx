@@ -233,9 +233,6 @@ export default function ActiveVehicles() {
                     )}
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" size="sm" onClick={() => setPayVehicle({ vehicle: v, outstanding })}>
-                      <Wallet className="w-3 h-3 mr-1" /> Add Payment
-                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
                       <ReceiptText className="w-3 h-3 mr-1" /> Ledger
                     </Button>
