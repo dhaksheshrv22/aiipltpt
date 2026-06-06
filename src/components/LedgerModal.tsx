@@ -8,10 +8,9 @@ import { formatINR, formatDateTime, calculateBill, formatDuration } from "@/util
 interface LedgerModalProps {
   vehicle: any;
   onClose: () => void;
-  onAddPayment?: () => void;
 }
 
-export default function LedgerModal({ vehicle, onClose, onAddPayment }: LedgerModalProps) {
+export default function LedgerModal({ vehicle, onClose }: LedgerModalProps) {
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ["ledger", vehicle.id],
     queryFn: async () => {
@@ -107,9 +106,6 @@ export default function LedgerModal({ vehicle, onClose, onAddPayment }: LedgerMo
           )}
 
           <div className="flex gap-2 justify-end">
-            {onAddPayment && (
-              <Button onClick={onAddPayment}>Add Payment</Button>
-            )}
             <Button variant="outline" onClick={onClose}>Close</Button>
           </div>
         </div>

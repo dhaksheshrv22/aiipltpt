@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle, Wallet, ReceiptText, Flag, Trash2, Printer } from "lucide-react";
+import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle, ReceiptText, Flag, Trash2, Printer } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +23,7 @@ import ExitModal from "@/components/ExitModal";
 import EditVehicleModal from "@/components/EditVehicleModal";
 import TempExitModal from "@/components/TempExitModal";
 import BarcodeScanner from "@/components/BarcodeScanner";
-import PaymentModal from "@/components/PaymentModal";
+
 import LedgerModal from "@/components/LedgerModal";
 import ActiveVehiclePrintModal from "@/components/ActiveVehiclePrintModal";
 import { useUpiSettings } from "@/hooks/useUpiSettings";
@@ -36,7 +36,7 @@ export default function ActiveVehicles() {
   const [exitVehicle, setExitVehicle] = useState<any>(null);
   const [editVehicle, setEditVehicle] = useState<any>(null);
   const [tempExitVehicle, setTempExitVehicle] = useState<{ vehicle: any; mode: "temp-exit" | "return" } | null>(null);
-  const [payVehicle, setPayVehicle] = useState<{ vehicle: any; outstanding: number } | null>(null);
+  
   const [ledgerVehicle, setLedgerVehicle] = useState<any>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [deleteVehicle, setDeleteVehicle] = useState<any>(null);
@@ -233,9 +233,6 @@ export default function ActiveVehicles() {
                     )}
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" size="sm" onClick={() => setPayVehicle({ vehicle: v, outstanding })}>
-                      <Wallet className="w-3 h-3 mr-1" /> Add Payment
-                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
                       <ReceiptText className="w-3 h-3 mr-1" /> Ledger
                     </Button>
@@ -310,27 +307,10 @@ export default function ActiveVehicles() {
         />
       )}
 
-      {payVehicle && (
-        <PaymentModal
-          vehicle={payVehicle.vehicle}
-          outstanding={payVehicle.outstanding}
-          onClose={() => setPayVehicle(null)}
-          onComplete={() => {
-            queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
-          }}
-        />
-      )}
-
       {ledgerVehicle && (
         <LedgerModal
           vehicle={ledgerVehicle}
           onClose={() => setLedgerVehicle(null)}
-          onAddPayment={() => {
-            const bill = calculateBill(new Date(ledgerVehicle.entry_time), new Date(), ledgerVehicle.daily_rate, ledgerVehicle.advance_paid ?? false);
-            const paid = (paidByVehicle as Record<string, number>)[ledgerVehicle.id] ?? 0;
-            setPayVehicle({ vehicle: ledgerVehicle, outstanding: Math.max(0, bill.grossAmount - paid) });
-            setLedgerVehicle(null);
-          }}
         />
       )}
 
