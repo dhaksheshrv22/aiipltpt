@@ -23,7 +23,7 @@ import ExitModal from "@/components/ExitModal";
 import EditVehicleModal from "@/components/EditVehicleModal";
 import TempExitModal from "@/components/TempExitModal";
 import BarcodeScanner from "@/components/BarcodeScanner";
-import PaymentModal from "@/components/PaymentModal";
+
 import LedgerModal from "@/components/LedgerModal";
 import ActiveVehiclePrintModal from "@/components/ActiveVehiclePrintModal";
 import { useUpiSettings } from "@/hooks/useUpiSettings";
