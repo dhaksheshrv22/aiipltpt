@@ -10,22 +10,15 @@ const LF = 0x0a;
 // spacing (ESC SP n) so receipts print broad, dark and easy to read on
 // 58mm thermal paper without the operator having to tweak anything.
 const COMMANDS = {
-  INIT: new Uint8Array([
-    ESC, 0x40,        // Initialize printer
-    ESC, 0x20, 0x02,  // ESC SP 2 — add 2 dots of space between characters
-    ESC, 0x45, 0x01,  // ESC E 1 — bold ON (kept on for the whole receipt)
-  ]),
+  INIT: new Uint8Array([ESC, 0x40]),
   CENTER: new Uint8Array([ESC, 0x61, 0x01]),
   LEFT: new Uint8Array([ESC, 0x61, 0x00]),
   BOLD_ON: new Uint8Array([ESC, 0x45, 0x01]),
   BOLD_OFF: new Uint8Array([ESC, 0x45, 0x00]),
   DOUBLE_HEIGHT: new Uint8Array([ESC, 0x21, 0x10]),
-  NORMAL_SIZE: new Uint8Array([ESC, 0x21, 0x08]), // keep bold bit on
-  LARGE: new Uint8Array([GS, 0x21, 0x11]),        // double width + double height via GS !
-  // MEDIUM = double-height body text. GS ! 0x01 = normal width, double height.
-  // Combined with the always-on bold from INIT this gives broad, dark, very
-  // legible body text — matches the reference receipt photo.
-  MEDIUM: new Uint8Array([GS, 0x21, 0x01]),
+  NORMAL_SIZE: new Uint8Array([ESC, 0x21, 0x00]),
+  LARGE: new Uint8Array([GS, 0x21, 0x11]),
+  MEDIUM: new Uint8Array([GS, 0x21, 0x00]),
   CUT: new Uint8Array([GS, 0x56, 0x00]),
   FEED: new Uint8Array([ESC, 0x64, 0x04]),
   LINE: new Uint8Array([LF]),
