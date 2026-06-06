@@ -71,7 +71,7 @@ export default function ActiveVehiclePrintModal({ vehicle, onClose }: ActiveVehi
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-sm print:shadow-none print:border-none">
-        <div className="font-mono text-sm bg-muted p-4 rounded-lg text-left space-y-1 relative" id="active-vehicle-print">
+        <div className="font-mono text-sm bg-muted p-4 rounded-lg text-left space-y-1 relative print-area" id="active-vehicle-print">
           <div className="text-center mb-2">
             <p className="font-bold text-base">{receiptSettings.companyName}</p>
             {receiptSettings.contactInfo && (
