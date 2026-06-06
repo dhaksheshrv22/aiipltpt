@@ -58,17 +58,13 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    en: "4. Add Payment & Ledger",
-    hi: "४. भुगतान और बही",
+    en: "4. Payment Ledger",
+    hi: "४. भुगतान बही",
     steps: [
-      ["Tap 'Add Payment' on any active card to record a partial or full payment before exit.",
-       "किसी भी सक्रिय कार्ड पर 'Add Payment' दबाकर निकास से पहले भुगतान दर्ज करें।"],
-      ["Enter amount, select mode (Cash / UPI / Card), and confirm. For UPI, a QR code is shown — driver scans and pays.",
-       "राशि डालें, मोड चुनें (Cash / UPI / Card), और कन्फ़र्म करें। UPI के लिए QR कोड दिखेगा।"],
-      ["Tap 'Ledger' to see the full payment history for that vehicle.",
-       "उस गाड़ी के सभी भुगतान देखने के लिए 'Ledger' दबाएँ।"],
-      ["From inside Ledger you can also add a new payment without going back.",
-       "लेजर के अंदर से भी नया भुगतान दर्ज कर सकते हैं।"],
+      ["Tap 'Ledger' on any active card to see the full payment history for that vehicle.",
+       "किसी भी सक्रिय कार्ड पर 'Ledger' दबाकर उस गाड़ी के सभी भुगतान देखें।"],
+      ["Payments are recorded automatically at entry (advance), temp exit, and final exit.",
+       "भुगतान प्रवेश (अग्रिम), अस्थायी निकास और अंतिम निकास पर स्वतः दर्ज होते हैं।"],
     ],
   },
   {
