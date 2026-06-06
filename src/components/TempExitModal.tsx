@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { formatDateTime, formatDuration, formatINR, calculateBill } from "@/utils/pricing";
 import { AlertTriangle, BadgeCheck, Wallet } from "lucide-react";
+import UpiQR from "@/components/UpiQR";
 
 interface TempExitModalProps {
   vehicle: any;
@@ -190,6 +191,15 @@ export default function TempExitModal({ vehicle, mode, onClose, onComplete }: Te
                     </div>
                   ))}
                 </RadioGroup>
+              )}
+              {payMode === "UPI" && parseInt(collectAmount) > 0 && (
+                <div className="pt-2">
+                  <UpiQR
+                    amount={parseInt(collectAmount) || 0}
+                    vehicleNumber={vehicle.vehicle_number}
+                    driverMobile={vehicle.driver_mobile}
+                  />
+                </div>
               )}
               <p className="text-xs text-muted-foreground">
                 Vehicle must return within {restHours} hour{restHours === 1 ? "" : "s"} of temp exit.

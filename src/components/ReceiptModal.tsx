@@ -7,6 +7,7 @@ import { connectPrinter, isPrinterConnected, printExitReceipt } from "@/utils/bl
 import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { toast } from "sonner";
 import { Printer, X, Bluetooth, Pencil, Save } from "lucide-react";
+import UpiQR from "@/components/UpiQR";
 
 interface ReceiptModalProps {
   receipt: any;
@@ -186,6 +187,19 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
             )}
             <p className="text-xs text-muted-foreground mt-2">{receiptSettings.footerText}</p>
           </div>
+
+          {(() => {
+            const total = parseInt(editTotal) || receipt.totalPaid || 0;
+            const gross = parseInt(editGross) || receipt.gross_amount || 0;
+            const due = Math.max(0, gross - total);
+            if (due <= 0) return null;
+            return (
+              <div className="pt-2">
+                <p className="text-center text-xs font-semibold text-destructive mb-1">Balance Due: {formatINR(due)}</p>
+                <UpiQR amount={due} vehicleNumber={receipt.vehicle_number} driverMobile={editMobile} />
+              </div>
+            );
+          })()}
         </div>
 
         <div className="flex flex-col gap-2 no-print mt-4">
