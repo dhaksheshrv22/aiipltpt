@@ -69,7 +69,7 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md print:shadow-none print:border-none">
-        <div className="font-mono text-sm space-y-3 print:text-black relative" id="receipt">
+        <div className="font-mono text-sm space-y-3 print:text-black relative print-area" id="receipt">
           <Button
             variant="ghost"
             size="icon"
