@@ -33,6 +33,7 @@ export type Database = {
           payment_status: string
           pricing_category: string
           return_time: string | null
+          shift_id: string | null
           temp_exit_payment_amount: number
           temp_exit_payment_at: string | null
           temp_exit_payment_mode: string | null
@@ -57,6 +58,7 @@ export type Database = {
           payment_status: string
           pricing_category: string
           return_time?: string | null
+          shift_id?: string | null
           temp_exit_payment_amount?: number
           temp_exit_payment_at?: string | null
           temp_exit_payment_mode?: string | null
@@ -81,6 +83,7 @@ export type Database = {
           payment_status?: string
           pricing_category?: string
           return_time?: string | null
+          shift_id?: string | null
           temp_exit_payment_amount?: number
           temp_exit_payment_at?: string | null
           temp_exit_payment_mode?: string | null
@@ -95,11 +98,19 @@ export type Database = {
             referencedRelation: "monthly_passes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "active_vehicles_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
         ]
       }
       app_settings: {
         Row: {
           advance_warning_hours: number | null
+          cash_variance_threshold: number
           created_at: string | null
           credit_limit_amount: number
           facility_name: string | null
@@ -116,6 +127,7 @@ export type Database = {
         }
         Insert: {
           advance_warning_hours?: number | null
+          cash_variance_threshold?: number
           created_at?: string | null
           credit_limit_amount?: number
           facility_name?: string | null
@@ -132,6 +144,7 @@ export type Database = {
         }
         Update: {
           advance_warning_hours?: number | null
+          cash_variance_threshold?: number
           created_at?: string | null
           credit_limit_amount?: number
           facility_name?: string | null
@@ -147,6 +160,56 @@ export type Database = {
           upi_payee_name?: string | null
         }
         Relationships: []
+      }
+      cash_reconciliations: {
+        Row: {
+          counted_cash: number
+          created_at: string
+          expected_cash: number
+          id: string
+          locked_at: string | null
+          notes: string | null
+          operator_name: string
+          recon_date: string
+          shift_id: string | null
+          updated_at: string
+          variance: number
+        }
+        Insert: {
+          counted_cash?: number
+          created_at?: string
+          expected_cash?: number
+          id?: string
+          locked_at?: string | null
+          notes?: string | null
+          operator_name: string
+          recon_date?: string
+          shift_id?: string | null
+          updated_at?: string
+          variance?: number
+        }
+        Update: {
+          counted_cash?: number
+          created_at?: string
+          expected_cash?: number
+          id?: string
+          locked_at?: string | null
+          notes?: string | null
+          operator_name?: string
+          recon_date?: string
+          shift_id?: string | null
+          updated_at?: string
+          variance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_reconciliations_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deleted_vehicles: {
         Row: {
@@ -250,9 +313,11 @@ export type Database = {
           history_vehicle_id: string | null
           id: string
           notes: string | null
+          operator_name: string | null
           paid_at: string | null
           payment_mode: string
           payment_type: string
+          shift_id: string | null
           vehicle_id: string | null
           vehicle_number: string
         }
@@ -261,9 +326,11 @@ export type Database = {
           history_vehicle_id?: string | null
           id?: string
           notes?: string | null
+          operator_name?: string | null
           paid_at?: string | null
           payment_mode: string
           payment_type: string
+          shift_id?: string | null
           vehicle_id?: string | null
           vehicle_number: string
         }
@@ -272,13 +339,22 @@ export type Database = {
           history_vehicle_id?: string | null
           id?: string
           notes?: string | null
+          operator_name?: string | null
           paid_at?: string | null
           payment_mode?: string
           payment_type?: string
+          shift_id?: string | null
           vehicle_id?: string | null
           vehicle_number?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payments_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_vehicle_id_fkey"
             columns: ["vehicle_id"]
@@ -287,6 +363,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shifts: {
+        Row: {
+          created_at: string
+          end_at: string | null
+          id: string
+          notes: string | null
+          operator_name: string
+          start_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_at?: string | null
+          id?: string
+          notes?: string | null
+          operator_name: string
+          start_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_at?: string | null
+          id?: string
+          notes?: string | null
+          operator_name?: string
+          start_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       vehicle_history: {
         Row: {
@@ -305,6 +414,7 @@ export type Database = {
           payment_mode: string
           pricing_category: string
           return_time: string | null
+          shift_id: string | null
           temp_exit_payment_amount: number
           temp_exit_payment_at: string | null
           temp_exit_payment_mode: string | null
@@ -329,6 +439,7 @@ export type Database = {
           payment_mode: string
           pricing_category: string
           return_time?: string | null
+          shift_id?: string | null
           temp_exit_payment_amount?: number
           temp_exit_payment_at?: string | null
           temp_exit_payment_mode?: string | null
@@ -353,6 +464,7 @@ export type Database = {
           payment_mode?: string
           pricing_category?: string
           return_time?: string | null
+          shift_id?: string | null
           temp_exit_payment_amount?: number
           temp_exit_payment_at?: string | null
           temp_exit_payment_mode?: string | null
@@ -361,7 +473,15 @@ export type Database = {
           total_hours?: number | null
           vehicle_number?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_history_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
