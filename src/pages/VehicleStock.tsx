@@ -77,14 +77,6 @@ export default function VehicleStock() {
   const restMs = restHours * 60 * 60 * 1000;
   const now = new Date();
 
-  return (
-    <div className="space-y-6 pb-20 md:pb-0">
-      <Seo title="Vehicle Stock & Inventory" description="Live count of all heavy vehicles parked at AIIPL Truck Parking Terminal, categorized by wheel count, with parked and temporarily-exited vehicle tabs." />
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-2xl font-bold">Vehicle Stock & Inventory</h1>
-        <div className="flex items-center gap-2">
-  const restMs = restHours * 60 * 60 * 1000;
-  const now = new Date();
 
   const buildPrintHtml = (mode: "all" | "summary" | string) => {
     const ts = format(now, "dd/MM/yyyy hh:mm a");
