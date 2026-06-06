@@ -36,9 +36,18 @@ export default function Reports() {
   const { data: history = [] } = useQuery({
     queryKey: ["reports-history"],
     queryFn: async () => {
-      const { data } = await supabase.from("vehicle_history").select("exit_time, pricing_category, gross_amount, total_hours, vehicle_number");
+      const { data } = await supabase.from("vehicle_history").select("entry_time, exit_time, pricing_category, gross_amount, total_hours, vehicle_number");
       return (data ?? []) as History[];
     },
+  });
+
+  const { data: active = [] } = useQuery({
+    queryKey: ["reports-active"],
+    queryFn: async () => {
+      const { data } = await supabase.from("active_vehicles").select("vehicle_number, pricing_category, entry_time, is_temporarily_out, temp_exit_time, return_time");
+      return (data ?? []) as any[];
+    },
+    refetchInterval: 60_000,
   });
 
   const years = useMemo(() => {
