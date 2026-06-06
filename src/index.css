@@ -70,13 +70,39 @@
 }
 
 @media print {
+  /* Hide everything by default; show only the active print-area. Prevents
+     window.print() from emitting a blank page caused by the app shell,
+     modal overlays and dialog chrome overflowing across pages. */
+  body * {
+    visibility: hidden !important;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+  .print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    padding: 8px !important;
+    background: white !important;
+    color: black !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.3px !important;
+  }
   .no-print {
     display: none !important;
   }
   .print-only {
     display: block !important;
   }
-  body {
+  html, body {
     background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  @page {
+    margin: 6mm;
   }
 }
