@@ -106,9 +106,6 @@ export default function LedgerModal({ vehicle, onClose }: LedgerModalProps) {
           )}
 
           <div className="flex gap-2 justify-end">
-            {onAddPayment && (
-              <Button onClick={onAddPayment}>Add Payment</Button>
-            )}
             <Button variant="outline" onClick={onClose}>Close</Button>
           </div>
         </div>
