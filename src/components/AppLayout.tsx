@@ -6,12 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useInterval } from "@/hooks/useInterval";
 import {
-  LayoutDashboard, Truck, PlusCircle, History, BarChart3, Settings, LogOut, Menu, BadgeCheck, Boxes, BookOpen, Trash2, ClockIcon
+  LayoutDashboard, Truck, PlusCircle, History, BarChart3, Settings, LogOut, Menu, BadgeCheck, Boxes, BookOpen, Trash2
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import ShiftControl from "./ShiftControl";
 
 
 const navItems = [
@@ -21,7 +20,7 @@ const navItems = [
   { to: "/monthly-passes", icon: BadgeCheck, label: "Monthly Passes" },
   { to: "/history", icon: History, label: "Vehicle History" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
-  { to: "/shifts", icon: ClockIcon, label: "Shifts & Cash" },
+  
   { to: "/settings", icon: Settings, label: "Settings" },
   { to: "/recycle-bin", icon: Trash2, label: "Recycle Bin" },
   { to: "/help", icon: BookOpen, label: "Help / सहायता" },
@@ -121,7 +120,6 @@ export default function AppLayout() {
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
-            <ShiftControl />
             <Badge variant="secondary" className="gap-1">
               <Truck className="w-3 h-3" /> {activeCount} active
             </Badge>
