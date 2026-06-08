@@ -30,6 +30,7 @@ interface HistorySuggestion {
 
 export default function VehicleEntry() {
   const navigate = useNavigate();
+  const receiptSettings = useReceiptSettings();
   const [loading, setLoading] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [driverMobile, setDriverMobile] = useState("");
