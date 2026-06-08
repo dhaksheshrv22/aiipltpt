@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Truck, Info, AlertCircle, BadgeCheck, Repeat, ChevronDown, ChevronUp } from "lucide-react";
 const EntryTokenModal = lazy(() => import("@/components/EntryTokenModal"));
 import Seo from "@/components/Seo";
+import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 
 interface HistorySuggestion {
   vehicle_number: string;
