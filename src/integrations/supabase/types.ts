@@ -38,6 +38,7 @@ export type Database = {
           temp_exit_payment_at: string | null
           temp_exit_payment_mode: string | null
           temp_exit_time: string | null
+          token_number: string | null
           vehicle_number: string
         }
         Insert: {
@@ -63,6 +64,7 @@ export type Database = {
           temp_exit_payment_at?: string | null
           temp_exit_payment_mode?: string | null
           temp_exit_time?: string | null
+          token_number?: string | null
           vehicle_number: string
         }
         Update: {
@@ -88,6 +90,7 @@ export type Database = {
           temp_exit_payment_at?: string | null
           temp_exit_payment_mode?: string | null
           temp_exit_time?: string | null
+          token_number?: string | null
           vehicle_number?: string
         }
         Relationships: [
@@ -397,6 +400,24 @@ export type Database = {
         }
         Relationships: []
       }
+      token_counters: {
+        Row: {
+          last_number: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          last_number?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          last_number?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       vehicle_history: {
         Row: {
           advance_paid_amount: number | null
@@ -419,6 +440,7 @@ export type Database = {
           temp_exit_payment_at: string | null
           temp_exit_payment_mode: string | null
           temp_exit_time: string | null
+          token_number: string | null
           total_days_billed: number | null
           total_hours: number | null
           vehicle_number: string
@@ -444,6 +466,7 @@ export type Database = {
           temp_exit_payment_at?: string | null
           temp_exit_payment_mode?: string | null
           temp_exit_time?: string | null
+          token_number?: string | null
           total_days_billed?: number | null
           total_hours?: number | null
           vehicle_number: string
@@ -469,6 +492,7 @@ export type Database = {
           temp_exit_payment_at?: string | null
           temp_exit_payment_mode?: string | null
           temp_exit_time?: string | null
+          token_number?: string | null
           total_days_billed?: number | null
           total_hours?: number | null
           vehicle_number?: string
@@ -488,7 +512,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      next_token_number: { Args: { _prefix?: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
