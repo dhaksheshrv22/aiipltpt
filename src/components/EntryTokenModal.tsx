@@ -21,6 +21,7 @@ interface EntryTokenModalProps {
     advance_amount: number;
     payment_mode: string;
     payment_status: string;
+    token_number?: string | null;
   };
   onClose: () => void;
 }
@@ -30,6 +31,7 @@ export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalPro
   const [connecting, setConnecting] = useState(false);
   const receiptSettings = useReceiptSettings();
   const [tokenNumber] = useState(() => {
+    if (vehicle.token_number) return vehicle.token_number;
     const year = new Date().getFullYear();
     const serial = Math.floor(1000 + Math.random() * 9000);
     return `${receiptSettings.prefix}-${year}-${String(serial).padStart(4, "0")}`;
