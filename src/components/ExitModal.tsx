@@ -64,7 +64,7 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
     }
     setLoading(true);
     const totalHours = parseFloat(rawBill.totalHours.toFixed(2));
-    const receiptNo = generateReceiptNumber(receiptSettings.prefix);
+    const receiptNo = vehicle.token_number || generateReceiptNumber(receiptSettings.prefix);
 
     const historyRow: any = {
       vehicle_number: vehicle.vehicle_number,
@@ -87,6 +87,7 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
       temp_exit_payment_amount: tempExitPaid,
       temp_exit_payment_mode: vehicle.temp_exit_payment_mode ?? null,
       temp_exit_payment_at: vehicle.temp_exit_payment_at ?? null,
+      token_number: vehicle.token_number ?? null,
     };
 
     const { data: historyEntry, error: histErr } = await supabase.from("vehicle_history").insert(historyRow).select().single();
