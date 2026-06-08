@@ -22,7 +22,7 @@ export function getPricingDetails(numWheels: number): PricingDetails | null {
   if (numWheels === 6) return { category: "6-Wheeler", dailyRate: 150 };
   if (numWheels >= 7 && numWheels <= 10) return { category: "7–10 Wheeler", dailyRate: 200 };
   if (numWheels >= 11 && numWheels <= 14) return { category: "11–14 Wheeler", dailyRate: 250 };
-  if (numWheels >= 15 && numWheels <= 20) return { category: "15–20 Wheeler", dailyRate: 300 };
+  if (numWheels >= 15 && numWheels <= 20) return { category: "15–20 Wheeler", dailyRate: 350 };
   if (numWheels > 20) return { category: "20+ Wheeler", dailyRate: 400 };
   return null; // invalid
 }
