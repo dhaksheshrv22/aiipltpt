@@ -2,11 +2,13 @@ import { addDays, differenceInDays } from "date-fns";
 import { getPricingDetails } from "./pricing";
 
 export const MONTHLY_DAYS = 30;
+export const MONTHLY_DISCOUNT = 0.2; // 20% discount on monthly pass
 
 export function getMonthlyPrice(numWheels: number) {
   const p = getPricingDetails(numWheels);
   if (!p) return null;
-  return { ...p, monthlyAmount: p.dailyRate * MONTHLY_DAYS };
+  const monthlyAmount = Math.round(p.dailyRate * MONTHLY_DAYS * (1 - MONTHLY_DISCOUNT));
+  return { ...p, monthlyAmount };
 }
 
 export function generatePassId(prefix: string = "AIIPL") {
