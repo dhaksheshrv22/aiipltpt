@@ -167,6 +167,16 @@ export default function VehicleEntry() {
       return;
     }
 
+    // Issue sequential token number (AIIPL-YEAR-00001)
+    let tokenNumber: string | null = null;
+    const { data: tokenData, error: tokenErr } = await supabase.rpc("next_token_number", { _prefix: receiptSettings.prefix });
+    if (tokenErr) {
+      console.error("Token issue failed", tokenErr);
+    } else if (tokenData) {
+      tokenNumber = tokenData as unknown as string;
+      await supabase.from("active_vehicles").update({ token_number: tokenNumber }).eq("id", vehicle.id);
+    }
+
     // Record advance payment in background — don't block the token UI
     if (advancePaid && vehicle) {
       supabase.from("payments").insert({
@@ -194,6 +204,7 @@ export default function VehicleEntry() {
       advance_amount: advanceAmount,
       payment_mode: paymentMode,
       payment_status: finalPaymentStatus,
+      token_number: tokenNumber,
     });
 
   };
