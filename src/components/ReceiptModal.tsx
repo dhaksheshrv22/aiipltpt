@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { formatINR, formatDate, formatTime, formatDuration } from "@/utils/pricing";
+import { formatDuration } from "@/utils/pricing";
 import { connectPrinter, isPrinterConnected, printExitReceipt } from "@/utils/bluetoothPrinter";
 import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { toast } from "sonner";
-import { Printer, X, Bluetooth, Pencil, Save } from "lucide-react";
+import { Printer, X, Bluetooth, Pencil, Save, Check } from "lucide-react";
 import UpiQR from "@/components/UpiQR";
 
 interface ReceiptModalProps {
@@ -14,192 +13,145 @@ interface ReceiptModalProps {
   onClose: () => void;
 }
 
+function fmtIN(d: Date) {
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
+}
+function fmtTM(d: Date) {
+  return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }).toUpperCase();
+}
+
 export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
   const [printing, setPrinting] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const receiptSettings = useReceiptSettings();
 
-  // Editable fields
   const [editing, setEditing] = useState(false);
   const [editMobile, setEditMobile] = useState(receipt.driver_mobile);
+  const [editRate, setEditRate] = useState(String(receipt.daily_rate));
   const [editGross, setEditGross] = useState(String(receipt.gross_amount));
-  const [editAdvance, setEditAdvance] = useState(String(receipt.advance_paid_amount ?? 0));
-  const [editBalance, setEditBalance] = useState(String(receipt.balancePaid));
-  const [editTotal, setEditTotal] = useState(String(receipt.totalPaid));
+  const [editAdvance, setEditAdvance] = useState(String((receipt.advance_paid_amount ?? 0) + (receipt.temp_exit_payment_amount ?? 0)));
 
-  const handleBrowserPrint = () => window.print();
+  const entryDt = new Date(receipt.entry_time);
+  const exitDt = new Date(receipt.exit_time);
+  const rate = parseInt(editRate) || receipt.daily_rate;
+  const gross = parseInt(editGross) || receipt.gross_amount || 0;
+  const adv = parseInt(editAdvance) || 0;
+  const balance = Math.max(0, gross - adv);
+  const days = receipt.total_days_billed || Math.max(1, Math.round(gross / Math.max(rate, 1)));
 
   const handleConnect = async () => {
     setConnecting(true);
-    try {
-      await connectPrinter();
-      toast.success("Printer connected!");
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    try { await connectPrinter(); toast.success("Printer connected!"); }
+    catch (err: any) { toast.error(err.message); }
     setConnecting(false);
   };
 
   const handleBluetoothPrint = async () => {
-    if (!isPrinterConnected()) {
-      toast.error("Please connect a Bluetooth printer first");
-      return;
-    }
+    if (!isPrinterConnected()) { toast.error("Please connect a Bluetooth printer first"); return; }
     setPrinting(true);
     try {
       await printExitReceipt({
         ...receipt,
         driver_mobile: editMobile,
-        gross_amount: parseInt(editGross) || receipt.gross_amount,
-        advance_paid_amount: parseInt(editAdvance) || 0,
-        balancePaid: parseInt(editBalance) || receipt.balancePaid,
-        totalPaid: parseInt(editTotal) || receipt.totalPaid,
+        gross_amount: gross,
+        advance_paid_amount: adv,
+        balancePaid: balance,
+        totalPaid: gross,
       });
       toast.success("Receipt printed!");
-    } catch (err: any) {
-      toast.error("Print failed: " + err.message);
-    }
+    } catch (err: any) { toast.error("Print failed: " + err.message); }
     setPrinting(false);
   };
 
-  const cleanCategory = (cat: string) => {
-    if (!cat) return "";
-    return cat.replace(/[^\x20-\x7E]/g, "-");
-  };
+  const settled = balance <= 0;
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md print:shadow-none print:border-none">
-        <div className="font-mono text-sm space-y-3 print:text-black relative print-area" id="receipt">
+      <DialogContent className="max-w-sm p-4 bg-muted print:bg-white">
+        <div className="aiipl-receipt print-area relative" id="receipt">
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-0 right-0 h-7 w-7 no-print"
+            className="absolute top-1 right-1 h-7 w-7 no-print"
             onClick={() => setEditing(!editing)}
             title={editing ? "Save edits" : "Edit receipt"}
           >
             {editing ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
           </Button>
 
-          <div className="text-center space-y-1">
-            <p className="text-lg font-bold">{receiptSettings.companyName}</p>
-            {receiptSettings.contactInfo && (
-              <p className="text-[10px] text-muted-foreground">{receiptSettings.contactInfo}</p>
-            )}
-            <p className="text-xs text-muted-foreground">EXIT RECEIPT</p>
-            <div className="border-t border-dashed my-2" />
+          <div className="ar-center ar-big">{receiptSettings.companyName || "AIIPL TRUCK PARKING"}</div>
+          {receiptSettings.contactInfo
+            ? <div className="ar-center ar-small" style={{ whiteSpace: "pre-line" }}>{receiptSettings.contactInfo}</div>
+            : <>
+                <div className="ar-center">SIPCOT PHASE 1</div>
+                <div className="ar-center">HOSUR 635126</div>
+              </>}
+          <div className="ar-center ar-warning">MANAGEMENT NOT RESPONSIBLE FOR GOODS</div>
+          <div className="ar-dashed" />
+          <div className="ar-center ar-xxl">EXIT RECEIPT</div>
+          <div className="ar-dashed" />
+
+          <div className="ar-row"><span>Token No. :</span><span className="ar-val">{receipt.receiptNo}</span></div>
+          <div className="ar-row">
+            <span>Cust Mobile :</span>
+            {editing
+              ? <input className="ar-edit" value={editMobile} onChange={e => setEditMobile(e.target.value)} />
+              : <span className="ar-val">{editMobile || "--"}</span>}
+          </div>
+          <div className="ar-row"><span>V TYPE :</span><span className="ar-val">{receipt.pricing_category}</span></div>
+          <div className="ar-row">
+            <span>RATE :</span>
+            {editing
+              ? <input className="ar-edit" value={editRate} onChange={e => setEditRate(e.target.value)} />
+              : <span className="ar-val">₹{rate} / Day</span>}
           </div>
 
-          <div className="space-y-1">
-            <Row label="Receipt No." value={receipt.receiptNo} />
-            <Row label="Vehicle" value={receipt.vehicle_number} />
-            {editing ? (
-              <EditRow label="Mobile No." value={editMobile} onChange={setEditMobile} />
-            ) : (
-              <Row label="Mobile No." value={editMobile} />
-            )}
-            <Row label="Category" value={cleanCategory(receipt.pricing_category)} />
+          <div className="ar-dashed" />
+          <div className="ar-highlight">V No : {receipt.vehicle_number}</div>
+          <div className="ar-highlight">IN DT : {fmtIN(entryDt)}</div>
+          <div className="ar-highlight">IN TM : {fmtTM(entryDt)}</div>
+          <div className="ar-highlight">OUT DT : {fmtIN(exitDt)}</div>
+          <div className="ar-highlight">OUT TM : {fmtTM(exitDt)}</div>
+          <div className="ar-highlight">DURATION : {formatDuration(entryDt, exitDt)}</div>
+          <div className="ar-dashed" />
+
+          <div className="ar-box">
+            <div className="ar-row"><span>DAYS CHARGED :</span><span className="ar-val">{days} Day{days > 1 ? "s" : ""}</span></div>
+            <div className="ar-row"><span>RATE / DAY :</span><span className="ar-val">₹{rate}</span></div>
+            <div className="ar-row">
+              <span>TOTAL CHARGE :</span>
+              {editing
+                ? <input className="ar-edit" value={editGross} onChange={e => setEditGross(e.target.value)} />
+                : <span className="ar-val">₹{gross}</span>}
+            </div>
+            <div className="ar-dashed" />
+            <div className="ar-row">
+              <span>ADVANCE GIVEN :</span>
+              {editing
+                ? <input className="ar-edit" value={editAdvance} onChange={e => setEditAdvance(e.target.value)} />
+                : <span className="ar-val">₹{adv}</span>}
+            </div>
+            <div className="ar-total">
+              <span>BALANCE DUE :</span>
+              <span>{settled ? "₹0 (Settled)" : `₹${balance}`}</span>
+            </div>
           </div>
 
-          <div className="border-t border-dashed" />
-
-          <div className="space-y-1">
-            <Row label="Entry Date" value={formatDate(receipt.entry_time)} />
-            <Row label="Entry Time" value={formatTime(receipt.entry_time)} />
-            <Row label="Exit Date" value={formatDate(receipt.exit_time)} />
-            <Row label="Exit Time" value={formatTime(receipt.exit_time)} />
-            <Row label="Duration" value={formatDuration(new Date(receipt.entry_time), new Date(receipt.exit_time))} />
+          <div className="ar-stamp">
+            {settled
+              ? <span><Check className="inline w-4 h-4 -mt-1" /> PAID</span>
+              : <span>Balance Due: ₹{balance}</span>}
           </div>
 
-          <div className="border-t border-dashed" />
+          <div className="ar-dashed" />
+          <div className="ar-center ar-small">THANK YOU FOR PARKING WITH US</div>
+          <div className="ar-center ar-small">DRIVE SAFE!</div>
 
-          {(receipt.temp_exit_time || receipt.return_time) && (
-            <>
-              <div className="space-y-1">
-                <p className="font-semibold text-center">— Temporary Exit Summary —</p>
-                {receipt.temp_exit_time && (
-                  <Row label="Temp Exit" value={`${formatDate(receipt.temp_exit_time)} ${formatTime(receipt.temp_exit_time)}`} />
-                )}
-                {receipt.return_time && (
-                  <Row label="Re-entry" value={`${formatDate(receipt.return_time)} ${formatTime(receipt.return_time)}`} />
-                )}
-                {receipt.temp_exit_time && receipt.return_time && (
-                  <Row label="Absence" value={formatDuration(new Date(receipt.temp_exit_time), new Date(receipt.return_time))} />
-                )}
-                {(receipt.temp_exit_payment_amount ?? 0) > 0 && (
-                  <>
-                    <Row label="Paid (Temp)" value={formatINR(receipt.temp_exit_payment_amount)} />
-                    {receipt.temp_exit_payment_at && (
-                      <Row label="Paid At" value={`${formatDate(receipt.temp_exit_payment_at)} ${formatTime(receipt.temp_exit_payment_at)}`} />
-                    )}
-                  </>
-                )}
-              </div>
-              <div className="border-t border-dashed" />
-            </>
+          {!settled && (
+            <div className="mt-2 no-print">
+              <UpiQR amount={balance} vehicleNumber={receipt.vehicle_number} driverMobile={editMobile} />
+            </div>
           )}
-
-          <div className="space-y-1">
-            {editing ? (
-              <>
-                <EditRow label="Gross Amount" value={editGross} onChange={setEditGross} />
-                <EditRow label="Advance Paid" value={editAdvance} onChange={setEditAdvance} />
-                <EditRow label="Balance Paid" value={editBalance} onChange={setEditBalance} />
-              </>
-            ) : (
-              <>
-                <Row label="Gross Amount" value={formatINR(parseInt(editGross) || receipt.gross_amount)} />
-                <Row label="Advance Paid" value={formatINR(parseInt(editAdvance) || 0)} />
-                {(receipt.temp_exit_payment_amount ?? 0) > 0 && (
-                  <Row label="Temp Exit Paid" value={formatINR(receipt.temp_exit_payment_amount)} />
-                )}
-                <Row label="Balance Paid" value={formatINR(parseInt(editBalance) || receipt.balancePaid)} />
-              </>
-            )}
-            <Row label="Payment Mode" value={receipt.exit_payment_mode || receipt.payment_mode} />
-          </div>
-
-          {receipt.ledger && receipt.ledger.length > 0 && (
-            <>
-              <div className="border-t border-dashed" />
-              <div className="space-y-0.5">
-                <p className="font-semibold text-center">— Payment Ledger —</p>
-                {receipt.ledger.map((p: any, i: number) => (
-                  <div key={p.id ?? i} className="flex justify-between text-[11px]">
-                    <span>{p.paid_at ? `${formatDate(p.paid_at)} ${p.payment_type}` : p.payment_type}</span>
-                    <span>{p.payment_mode} · {formatINR(p.amount)}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          <div className="border-t border-dashed" />
-
-          <div className="text-center">
-            {editing ? (
-              <div className="flex items-center justify-center gap-2">
-                <span className="font-bold text-base">TOTAL PAID: ₹</span>
-                <Input value={editTotal} onChange={e => setEditTotal(e.target.value)} className="h-7 w-24 text-center font-bold text-base px-1" />
-              </div>
-            ) : (
-              <p className="font-bold text-base">TOTAL PAID: {formatINR(parseInt(editTotal) || receipt.totalPaid)}</p>
-            )}
-            <p className="text-xs text-muted-foreground mt-2">{receiptSettings.footerText}</p>
-          </div>
-
-          {(() => {
-            const total = parseInt(editTotal) || receipt.totalPaid || 0;
-            const gross = parseInt(editGross) || receipt.gross_amount || 0;
-            const due = Math.max(0, gross - total);
-            if (due <= 0) return null;
-            return (
-              <div className="pt-2">
-                <p className="text-center text-xs font-semibold text-destructive mb-1">Balance Due: {formatINR(due)}</p>
-                <UpiQR amount={due} vehicleNumber={receipt.vehicle_number} driverMobile={editMobile} />
-              </div>
-            );
-          })()}
         </div>
 
         <div className="flex flex-col gap-2 no-print mt-4">
@@ -219,7 +171,7 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
           </Button>
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleBrowserPrint} className="flex-1">
+            <Button variant="outline" onClick={() => window.print()} className="flex-1">
               <Printer className="w-4 h-4 mr-1" /> Browser Print
             </Button>
             <Button variant="ghost" onClick={onClose}>
@@ -229,23 +181,5 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-muted-foreground">{label}:</span>
-      <span className="font-medium text-right">{value}</span>
-    </div>
-  );
-}
-
-function EditRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex justify-between items-center gap-2">
-      <span className="text-muted-foreground whitespace-nowrap">{label}:</span>
-      <Input value={value} onChange={e => onChange(e.target.value)} className="h-7 text-xs font-medium text-right w-28 px-2" />
-    </div>
   );
 }

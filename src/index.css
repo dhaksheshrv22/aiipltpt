@@ -106,3 +106,31 @@
     margin: 6mm;
   }
 }
+
+/* ===== AIIPL Thermal Receipt Style ===== */
+.aiipl-receipt {
+  background: #fff;
+  color: #000;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  padding: 18px 16px 20px;
+  border: 1px solid #ccc;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  line-height: 1.35;
+}
+.aiipl-receipt .ar-center { text-align: center; }
+.aiipl-receipt .ar-big { font-size: 15px; font-weight: 700; }
+.aiipl-receipt .ar-xxl { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+.aiipl-receipt .ar-dashed { border-top: 1px dashed #000; margin: 8px 0; }
+.aiipl-receipt .ar-row { display: flex; justify-content: space-between; margin: 3px 0; font-size: 13px; gap: 8px; }
+.aiipl-receipt .ar-row .ar-val { font-weight: 700; text-align: right; }
+.aiipl-receipt .ar-highlight { font-size: 15px; font-weight: 700; text-align: center; margin: 5px 0; }
+.aiipl-receipt .ar-small { font-size: 11px; }
+.aiipl-receipt .ar-warning { font-size: 11px; font-weight: 700; text-align: center; }
+.aiipl-receipt .ar-box { border: 1px solid #000; padding: 6px 8px; margin: 6px 0; }
+.aiipl-receipt .ar-total { display: flex; justify-content: space-between; margin: 4px 0; font-size: 15px; font-weight: 700; }
+.aiipl-receipt .ar-stamp { text-align: center; margin: 8px 0; }
+.aiipl-receipt .ar-stamp span { border: 3px solid #000; display: inline-block; padding: 3px 16px; font-size: 15px; font-weight: 700; letter-spacing: 2px; }
+.aiipl-receipt .ar-edit { width: 110px; padding: 2px 6px; border: 1px solid #999; font-family: inherit; font-size: 12px; text-align: right; }
