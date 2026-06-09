@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { formatDate, formatTime } from "@/utils/pricing";
 import { connectPrinter, isPrinterConnected, printEntryToken } from "@/utils/bluetoothPrinter";
 import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { toast } from "sonner";
-import { Bluetooth, Printer, X, Pencil, Save } from "lucide-react";
+import { Bluetooth, Printer, X } from "lucide-react";
 
 interface EntryTokenModalProps {
   vehicle: {
@@ -24,12 +23,7 @@ interface EntryTokenModalProps {
   onClose: () => void;
 }
 
-function fmtIN(d: Date) {
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
-}
-function fmtTM(d: Date) {
-  return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }).toUpperCase();
-}
+const DASH = "--------------------------------";
 
 export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalProps) {
   const [printing, setPrinting] = useState(false);
@@ -42,14 +36,10 @@ export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalPro
     return `${receiptSettings.prefix}-${year}-${String(serial).padStart(5, "0")}`;
   });
 
-  const entryDt = new Date(vehicle.entry_time);
-  const [editing, setEditing] = useState(false);
-  const [editMobile, setEditMobile] = useState(vehicle.driver_mobile);
-  const [editRate, setEditRate] = useState(String(vehicle.daily_rate));
-  const [editAdvance, setEditAdvance] = useState(String(vehicle.advance_amount || 0));
-
-  const rate = parseInt(editRate) || vehicle.daily_rate;
-  const adv = parseInt(editAdvance) || 0;
+  const entryDate = new Date(vehicle.entry_time);
+  const dateStr = entryDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const timeStr = entryDate.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  const isPaid = vehicle.advance_paid || vehicle.payment_mode !== "Due";
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -62,76 +52,48 @@ export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalPro
     if (!isPrinterConnected()) { toast.error("Please connect a Bluetooth printer first"); return; }
     setPrinting(true);
     try {
-      await printEntryToken({ ...vehicle, tokenNumber, driver_mobile: editMobile, daily_rate: rate });
+      await printEntryToken({ ...vehicle, tokenNumber });
       toast.success("Entry token printed!");
     } catch (err: any) { toast.error("Print failed: " + err.message); }
     setPrinting(false);
   };
 
+  const Copy = ({ label, footer1, footer2 }: { label: string; footer1: string; footer2: string }) => (
+    <pre className="font-mono text-[12px] leading-tight whitespace-pre text-foreground m-0">
+{`        AIIPL TRUCK PARKING
+
+${DASH}
+         PARKING TOKEN
+
+         ** ${label} **
+${DASH}
+Token No.: ${tokenNumber}
+${DASH}
+        ${vehicle.vehicle_number}
+
+${DASH}
+Wheels   : ${vehicle.num_wheels} (${vehicle.pricing_category})
+Rate     : Rs.${vehicle.daily_rate}/day
+Mobile   : ${vehicle.driver_mobile}
+Entry Dt : ${dateStr}
+Entry Tm : ${timeStr}
+${isPaid
+  ? `Pay Mode : ${vehicle.payment_mode}\nAdvance  : ${vehicle.advance_paid ? `Rs.${vehicle.advance_amount}` : "None"}`
+  : `Payment  : Due`}
+${DASH}
+         ${footer1}
+         ${footer2}
+${DASH}`}
+    </pre>
+  );
+
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-sm p-4 bg-muted">
-        <div className="aiipl-receipt print-area relative" id="receipt">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-1 right-1 h-7 w-7 no-print"
-            onClick={() => setEditing(!editing)}
-            title={editing ? "Save edits" : "Edit receipt"}
-          >
-            {editing ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-          </Button>
-
-          <div className="ar-center ar-big">{receiptSettings.companyName || "AIIPL TRUCK PARKING"}</div>
-          {receiptSettings.contactInfo
-            ? <div className="ar-center ar-small" style={{ whiteSpace: "pre-line" }}>{receiptSettings.contactInfo}</div>
-            : <>
-                <div className="ar-center">SIPCOT PHASE 1</div>
-                <div className="ar-center">HOSUR 635126</div>
-              </>}
-          <div className="ar-center ar-warning">MANAGEMENT NOT RESPONSIBLE FOR GOODS</div>
-          <div className="ar-dashed" />
-          <div className="ar-center ar-xxl">PARKING TOKEN</div>
-          <div className="ar-dashed" />
-
-          <div className="ar-row"><span>Token No. :</span><span className="ar-val">{tokenNumber}</span></div>
-          <div className="ar-row">
-            <span>Cust Mobile :</span>
-            {editing
-              ? <input className="ar-edit" value={editMobile} onChange={e => setEditMobile(e.target.value)} />
-              : <span className="ar-val">{editMobile || "--"}</span>}
-          </div>
-          <div className="ar-row"><span>V TYPE :</span><span className="ar-val">{vehicle.pricing_category}</span></div>
-          <div className="ar-row">
-            <span>RATE :</span>
-            {editing
-              ? <input className="ar-edit" value={editRate} onChange={e => setEditRate(e.target.value)} />
-              : <span className="ar-val">₹{rate} / Day</span>}
-          </div>
-
-          <div className="ar-dashed" />
-          <div className="ar-highlight">V No : {vehicle.vehicle_number}</div>
-          <div className="ar-highlight">IN DT : {fmtIN(entryDt)}</div>
-          <div className="ar-highlight">IN TM : {fmtTM(entryDt)}</div>
-          <div className="ar-dashed" />
-
-          {(vehicle.advance_paid && adv > 0) && (
-            <div className="ar-box">
-              <div className="ar-row">
-                <span>ADVANCE GIVEN :</span>
-                {editing
-                  ? <input className="ar-edit" value={editAdvance} onChange={e => setEditAdvance(e.target.value)} />
-                  : <span className="ar-val">₹{adv}</span>}
-              </div>
-              <div className="ar-row"><span>BALANCE DUE :</span><span className="ar-val">At Exit</span></div>
-            </div>
-          )}
-
-          <div className="ar-stamp"><span>Payment Due</span></div>
-          <div className="ar-dashed" />
-          <div className="ar-center ar-small">MINIMUM 1 HOUR &nbsp;|&nbsp; MAXIMUM 24 HOUR</div>
-          <div className="ar-center ar-small">GRACE PERIOD : 1 HOUR AFTER 24 HRS</div>
-          <div className="ar-center ar-small">MAXIMUM DUE PERIOD : 7 DAYS</div>
+        <div className="print-area bg-background p-3 rounded border space-y-4 max-h-[60vh] overflow-y-auto" id="receipt">
+          <Copy label="CUSTOMER COPY" footer1="KEEP TOKEN SAFE" footer2="Required at exit" />
+          <div className="text-center font-mono text-[10px] text-muted-foreground">— — — — — — —</div>
+          <Copy label="ORGANISATION COPY" footer1="OFFICE RECORD" footer2="File for records" />
         </div>
 
         <div className="flex flex-col gap-2 no-print mt-4">
