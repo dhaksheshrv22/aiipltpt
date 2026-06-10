@@ -33,40 +33,11 @@ export default function ReceiptModal({ receipt, onClose }: ReceiptModalProps) {
   durationParts.push(`${mins}m`);
   const durationStr = durationParts.join(" ");
 
-  const tempPaid = receipt.temp_exit_payment_amount ?? 0;
-  const hasTempExit = !!(receipt.temp_exit_time || receipt.return_time || tempPaid > 0);
   const gross = receipt.gross_amount ?? 0;
   const advance = receipt.advance_paid_amount ?? 0;
-  const balance = Math.max(0, gross - advance - tempPaid);
+  const balance = Math.max(0, gross - advance);
   const total = receipt.totalPaid ?? gross;
   const payMode = receipt.exit_payment_mode || receipt.payment_mode;
-
-  let tempBlock = "";
-  if (hasTempExit) {
-    tempBlock += `TEMP EXIT SUMMARY\n`;
-    if (receipt.temp_exit_time) {
-      const t = new Date(receipt.temp_exit_time);
-      tempBlock += `Out      : ${fmtDate(t)} ${fmtTime(t)}\n`;
-    }
-    if (receipt.return_time) {
-      const t = new Date(receipt.return_time);
-      tempBlock += `Re-entry : ${fmtDate(t)} ${fmtTime(t)}\n`;
-    }
-    if (receipt.temp_exit_time && receipt.return_time) {
-      const a = new Date(receipt.temp_exit_time).getTime();
-      const b = new Date(receipt.return_time).getTime();
-      const m = Math.max(0, Math.floor((b - a) / 60000));
-      tempBlock += `Absence  : ${Math.floor(m / 60)}h ${m % 60}m\n`;
-    }
-    if (tempPaid > 0) {
-      tempBlock += `Paid     : Rs.${tempPaid} (${receipt.temp_exit_payment_mode || "-"})\n`;
-      if (receipt.temp_exit_payment_at) {
-        const t = new Date(receipt.temp_exit_payment_at);
-        tempBlock += `Paid At  : ${fmtDate(t)} ${fmtTime(t)}\n`;
-      }
-    }
-    tempBlock += `${DASH}\n`;
-  }
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -108,9 +79,9 @@ Exit Dt  : ${fmtDate(exitDate)}
 Exit Tm  : ${fmtTime(exitDate)}
 Duration : ${durationStr}
 ${DASH}
-${tempBlock}BILLING DETAILS
+BILLING DETAILS
 Gross Amt: Rs.${gross}
-Advance  : Rs.${advance}${tempPaid > 0 ? `\nTemp Paid: Rs.${tempPaid}` : ""}
+Advance  : Rs.${advance}
 Balance  : Rs.${balance}
 Pay Mode : ${payMode}
 ${DASH}

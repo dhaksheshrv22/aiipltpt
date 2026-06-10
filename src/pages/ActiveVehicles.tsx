@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock, Pencil, ScanBarcode, LogOut, RotateCcw, AlertTriangle, ReceiptText, Flag, Trash2, Printer } from "lucide-react";
+import { Search, Truck, Clock, Pencil, ScanBarcode, ReceiptText, Flag, Trash2, Printer } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import ExitModal from "@/components/ExitModal";
 import EditVehicleModal from "@/components/EditVehicleModal";
-import TempExitModal from "@/components/TempExitModal";
 import BarcodeScanner from "@/components/BarcodeScanner";
 
 import LedgerModal from "@/components/LedgerModal";
@@ -35,28 +34,18 @@ export default function ActiveVehicles() {
   const [filter, setFilter] = useState("all");
   const [exitVehicle, setExitVehicle] = useState<any>(null);
   const [editVehicle, setEditVehicle] = useState<any>(null);
-  const [tempExitVehicle, setTempExitVehicle] = useState<{ vehicle: any; mode: "temp-exit" | "return" } | null>(null);
-  
+
   const [ledgerVehicle, setLedgerVehicle] = useState<any>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [deleteVehicle, setDeleteVehicle] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
   const [printVehicle, setPrintVehicle] = useState<any>(null);
-  
+
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
   const { creditLimit } = useUpiSettings();
 
-  // Auto-refresh every 30s so rest-hours alerts surface promptly
   useInterval(() => setTick(t => t + 1), 30000);
-
-  const { data: restHours = 4 } = useQuery({
-    queryKey: ["tempExitRestHours"],
-    queryFn: async () => {
-      const { data } = await supabase.from("app_settings").select("temp_exit_rest_hours" as any).limit(1).single();
-      return ((data as any)?.temp_exit_rest_hours as number) ?? 4;
-    },
-  });
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ["activeVehicles"],
@@ -67,7 +56,6 @@ export default function ActiveVehicles() {
     refetchInterval: 30000,
   });
 
-  // Sum payments per active vehicle for live outstanding balance
   const { data: paidByVehicle = {} } = useQuery({
     queryKey: ["paidByActiveVehicle"],
     queryFn: async () => {
@@ -91,45 +79,22 @@ export default function ActiveVehicles() {
   }, []);
 
   const filtered = vehicles.filter(v => {
-    const matchesSearch = !search || 
-      v.vehicle_number.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesSearch = !search ||
+      v.vehicle_number.toLowerCase().includes(search.toLowerCase()) ||
       v.driver_mobile.includes(search);
     if (!matchesSearch) return false;
     if (filter === "overstay") return isOverstay(v.entry_time);
     if (filter === "advance") return v.advance_paid;
     if (filter === "due") return v.payment_status === "Due";
-    if (filter === "temp-out") return v.is_temporarily_out;
     return true;
   });
 
-  // Search no longer pops any dialog — list filters directly
-
   const now = new Date();
-  const tempOutCount = vehicles.filter(v => v.is_temporarily_out).length;
-
-  // Rest-hours overstay alert: vehicle out longer than allowed rest hours
-  const restMs = restHours * 60 * 60 * 1000;
-  const overstayedTempOut = vehicles.filter(v => {
-    if (!v.is_temporarily_out || !v.temp_exit_time) return false;
-    return now.getTime() - new Date(v.temp_exit_time).getTime() > restMs;
-  });
 
   return (
     <div className="space-y-4 pb-20 md:pb-0">
-      <Seo title="Active Vehicles" description="View all heavy vehicles currently parked, with overstay alerts, temporary-exit tracking and exit processing for the AIIPL Truck Parking Terminal." />
+      <Seo title="Active Vehicles" description="View all heavy vehicles currently parked, with overstay alerts and exit processing for the AIIPL Truck Parking Terminal." />
       <h1 className="text-2xl font-bold">Active Vehicles</h1>
-
-      {overstayedTempOut.length > 0 && (
-        <div className="bg-destructive/10 border-2 border-destructive rounded-lg p-4 flex items-start gap-3 animate-pulse">
-          <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="font-bold text-destructive">⚠️ Temporary Exit Overstay Alert</p>
-            <p className="text-sm mt-1">
-              {overstayedTempOut.map(v => v.vehicle_number).join(", ")} — has NOT re-entered even after the allotted {restHours}h rest hours within their 24-hour period.
-            </p>
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -143,7 +108,6 @@ export default function ActiveVehicles() {
           <Tabs value={filter} onValueChange={setFilter}>
             <TabsList className="flex-wrap">
               <TabsTrigger value="all">All ({vehicles.length})</TabsTrigger>
-              <TabsTrigger value="temp-out">Temp Out ({tempOutCount})</TabsTrigger>
               <TabsTrigger value="overstay">Overstay</TabsTrigger>
               <TabsTrigger value="advance">Advance</TabsTrigger>
               <TabsTrigger value="due">Due</TabsTrigger>
@@ -163,19 +127,12 @@ export default function ActiveVehicles() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(v => {
             const overstay = isOverstay(v.entry_time);
-            const isTempOut = v.is_temporarily_out;
-            // Freeze the bill at temp-exit time when vehicle is temporarily out,
-            // so outstanding doesn't grow (and clears properly after temp-exit payment).
-            const billEndTime = v.is_temporarily_out && v.temp_exit_time ? new Date(v.temp_exit_time) : now;
-            const bill = calculateBill(new Date(v.entry_time), billEndTime, v.daily_rate, v.advance_paid ?? false);
+            const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
             const paid = (paidByVehicle as Record<string, number>)[v.id] ?? 0;
-            // If status is Paid, force-clear outstanding to avoid stale UI from bill drift.
             const outstanding = v.payment_status === "Paid" ? 0 : Math.max(0, bill.grossAmount - paid);
             const overLimit = creditLimit > 0 && outstanding > creditLimit;
             const borderColor = overLimit
               ? "border-l-destructive bg-destructive/5"
-              : isTempOut
-              ? "border-l-warning bg-warning/5"
               : overstay
               ? "border-l-destructive bg-destructive/5"
               : v.advance_paid
@@ -187,15 +144,11 @@ export default function ActiveVehicles() {
             return (
               <Card key={v.id} className={`border-l-4 ${borderColor} relative`}>
                 <CardContent className="pt-5 space-y-3">
-                  {/* Status badges */}
                   <div className="absolute top-3 right-3 flex gap-1">
                     {overLimit && (
                       <Badge variant="destructive" className="animate-pulse"><Flag className="w-3 h-3 mr-1" />OVER LIMIT</Badge>
                     )}
-                    {isTempOut && (
-                      <Badge className="bg-warning text-warning-foreground animate-pulse">TEMP OUT</Badge>
-                    )}
-                    {overstay && !isTempOut && (
+                    {overstay && (
                       <Badge variant="destructive" className="animate-pulse">OVERSTAY</Badge>
                     )}
                   </div>
@@ -208,9 +161,6 @@ export default function ActiveVehicles() {
                     <p>📱 {v.driver_mobile}</p>
                     <p>🛞 {v.num_wheels} wheels — {formatINR(v.daily_rate)}/day</p>
                     <p>📅 {formatDateTime(v.entry_time)}</p>
-                    {isTempOut && v.temp_exit_time && (
-                      <p className="text-warning">🚪 Temp exit: {formatDateTime(v.temp_exit_time)}</p>
-                    )}
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       <span className="font-medium text-foreground">{formatDuration(new Date(v.entry_time), now)}</span>
@@ -228,9 +178,6 @@ export default function ActiveVehicles() {
                     <Badge variant={v.payment_status === "Paid" ? "default" : "destructive"}>
                       {v.payment_status}
                     </Badge>
-                    {isTempOut && (
-                      <Badge variant="outline" className="border-warning text-warning">Temporarily Out</Badge>
-                    )}
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
@@ -242,24 +189,10 @@ export default function ActiveVehicles() {
                     <Button variant="outline" size="sm" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => setDeleteVehicle(v)} title="Delete entry (wrong data)">
                       <Trash2 className="w-3 h-3 mr-1" /> Delete
                     </Button>
-                    {!isTempOut ? (
-                      <>
-                        <Button variant="outline" size="sm" onClick={() => setEditVehicle(v)}>
-                          <Pencil className="w-3 h-3 mr-1" /> Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="border-warning text-warning hover:bg-warning/10" onClick={() => setTempExitVehicle({ vehicle: v, mode: "temp-exit" })}>
-                          <LogOut className="w-3 h-3 mr-1" /> Temp Exit
-                        </Button>
-                        <Button size="sm" className="flex-1" onClick={() => setExitVehicle(v)}>Exit</Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button size="sm" className="flex-1" onClick={() => setTempExitVehicle({ vehicle: v, mode: "return" })}>
-                          <RotateCcw className="w-3 h-3 mr-1" /> Return Vehicle
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => setExitVehicle(v)}>Full Exit</Button>
-                      </>
-                    )}
+                    <Button variant="outline" size="sm" onClick={() => setEditVehicle(v)}>
+                      <Pencil className="w-3 h-3 mr-1" /> Edit
+                    </Button>
+                    <Button size="sm" className="flex-1" onClick={() => setExitVehicle(v)}>Exit</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -289,21 +222,6 @@ export default function ActiveVehicles() {
             setEditVehicle(null);
             queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
           }}
-        />
-      )}
-
-      {tempExitVehicle && (
-        <TempExitModal
-          vehicle={tempExitVehicle.vehicle}
-          mode={tempExitVehicle.mode}
-          onClose={() => setTempExitVehicle(null)}
-          onComplete={() => {
-            setTempExitVehicle(null);
-            queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
-            queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
-            queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
-          }}
-
         />
       )}
 
@@ -347,7 +265,6 @@ export default function ActiveVehicles() {
                 if (!deleteVehicle) return;
                 setDeleting(true);
                 try {
-                  // Archive into recycle bin first
                   const { data: pays } = await supabase
                     .from("payments")
                     .select("*")

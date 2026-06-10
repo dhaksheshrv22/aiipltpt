@@ -340,11 +340,6 @@ export async function printExitReceipt(receipt: {
   totalPaid: number;
   payment_mode: string;
   exit_payment_mode?: string;
-  temp_exit_time?: string | null;
-  return_time?: string | null;
-  temp_exit_payment_amount?: number;
-  temp_exit_payment_mode?: string | null;
-  temp_exit_payment_at?: string | null;
 }): Promise<void> {
   const entryDate = new Date(receipt.entry_time);
   const exitDate = new Date(receipt.exit_time);
@@ -363,43 +358,6 @@ export async function printExitReceipt(receipt: {
   durationParts.push(`${mins}m`);
   const durationStr = durationParts.join(" ");
 
-  const tempPaid = receipt.temp_exit_payment_amount ?? 0;
-  const hasTempExit = !!(receipt.temp_exit_time || receipt.return_time || tempPaid > 0);
-
-  const tempBlock: Uint8Array[] = [];
-  if (hasTempExit) {
-    tempBlock.push(
-      COMMANDS.BOLD_ON,
-      textToBytes("TEMP EXIT SUMMARY\n"),
-      COMMANDS.BOLD_OFF,
-    );
-    if (receipt.temp_exit_time) {
-      const t = new Date(receipt.temp_exit_time);
-      tempBlock.push(textToBytes(`Out      : ${fmtDate(t)} ${fmtTime(t)}\n`));
-    }
-    if (receipt.return_time) {
-      const t = new Date(receipt.return_time);
-      tempBlock.push(textToBytes(`Re-entry : ${fmtDate(t)} ${fmtTime(t)}\n`));
-    }
-    if (receipt.temp_exit_time && receipt.return_time) {
-      const a = new Date(receipt.temp_exit_time).getTime();
-      const b = new Date(receipt.return_time).getTime();
-      const m = Math.max(0, Math.floor((b - a) / 60000));
-      const h = Math.floor(m / 60);
-      const mm = m % 60;
-      tempBlock.push(textToBytes(`Absence  : ${h}h ${mm}m\n`));
-    }
-    if (tempPaid > 0) {
-      tempBlock.push(
-        textToBytes(`Paid     : Rs.${tempPaid} (${receipt.temp_exit_payment_mode || "-"})\n`),
-      );
-      if (receipt.temp_exit_payment_at) {
-        const t = new Date(receipt.temp_exit_payment_at);
-        tempBlock.push(textToBytes(`Paid At  : ${fmtDate(t)} ${fmtTime(t)}\n`));
-      }
-    }
-    tempBlock.push(dashedLine());
-  }
 
   const data = concatBytes(
     COMMANDS.INIT,
@@ -430,11 +388,9 @@ export async function printExitReceipt(receipt: {
     textToBytes(`Exit Tm  : ${fmtTime(exitDate)}\n`),
     textToBytes(`Duration : ${durationStr}\n`),
     dashedLine(),
-    ...tempBlock,
     textToBytes("BILLING DETAILS\n"),
     textToBytes(`Gross Amt: Rs.${receipt.gross_amount}\n`),
     textToBytes(`Advance  : Rs.${receipt.advance_paid_amount ?? 0}\n`),
-    ...(tempPaid > 0 ? [textToBytes(`Temp Paid: Rs.${tempPaid}\n`)] : []),
     textToBytes(`Balance  : Rs.${receipt.balancePaid}\n`),
     textToBytes(`Pay Mode : ${receipt.exit_payment_mode || receipt.payment_mode}\n`),
     dashedLine(),
