@@ -50,11 +50,10 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
     : calculateBill(new Date(vehicle.entry_time), now, vehicle.daily_rate, vehicle.advance_paid ?? false);
 
   const advanceAmt = vehicle.advance_amount ?? 0;
-  const tempExitPaid = vehicle.temp_exit_payment_amount ?? 0;
-  // ledger already includes advance + temp-exit + partial payments (inserted with vehicle_id)
+  // ledger already includes advance + partial payments (inserted with vehicle_id)
   const ledgerTotal = ledger.reduce((s: number, p: any) => s + (p.amount ?? 0), 0);
   // Defensive: if ledger missed historical entries, fall back to known amounts
-  const totalPaidPre = Math.max(ledgerTotal, advanceAmt + tempExitPaid);
+  const totalPaidPre = Math.max(ledgerTotal, advanceAmt);
   const balanceDue = Math.max(0, rawBill.grossAmount - totalPaidPre);
 
   const handleExit = async () => {
@@ -82,11 +81,6 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
       payment_mode: vehicle.payment_mode,
       exit_payment_mode: exitPaymentMode,
       final_payment_status: "Paid",
-      temp_exit_time: vehicle.temp_exit_time ?? null,
-      return_time: vehicle.return_time ?? null,
-      temp_exit_payment_amount: tempExitPaid,
-      temp_exit_payment_mode: vehicle.temp_exit_payment_mode ?? null,
-      temp_exit_payment_at: vehicle.temp_exit_payment_at ?? null,
       token_number: vehicle.token_number ?? null,
     };
 
