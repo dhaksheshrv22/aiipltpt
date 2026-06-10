@@ -63,8 +63,8 @@ const SECTIONS: Section[] = [
     steps: [
       ["Tap 'Ledger' on any active card to see the full payment history for that vehicle.",
        "किसी भी सक्रिय कार्ड पर 'Ledger' दबाकर उस गाड़ी के सभी भुगतान देखें।"],
-      ["Payments are recorded automatically at entry (advance), temp exit, and final exit.",
-       "भुगतान प्रवेश (अग्रिम), अस्थायी निकास और अंतिम निकास पर स्वतः दर्ज होते हैं।"],
+      ["Payments are recorded automatically at entry (advance) and final exit.",
+       "भुगतान प्रवेश (अग्रिम) और अंतिम निकास पर स्वतः दर्ज होते हैं।"],
     ],
   },
   {
@@ -90,15 +90,13 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    en: "7. Temporary Exit & Return",
-    hi: "७. अस्थायी निकास और वापसी",
+    en: "7. Barcode Scan",
+    hi: "७. बारकोड स्कैन",
     steps: [
-      ["If the driver leaves for food/rest within the 24-hour window, tap 'Temp Exit'. The card turns yellow with 'TEMP OUT'.",
-       "ड्राइवर 24 घंटे के अंदर खाने/आराम के लिए जाए तो 'Temp Exit' दबाएँ। कार्ड पीला हो जाता है।"],
-      ["The allowed rest hours is set in Settings (default 4 h). If the vehicle is out longer, a red alert banner appears at the top.",
-       "विश्राम घंटे सेटिंग्स में तय हैं (डिफ़ॉल्ट 4 घं)। ज़्यादा देर होने पर ऊपर लाल अलर्ट आता है।"],
-      ["When the vehicle returns, tap 'Return Vehicle' on the same card. The pause is recorded and parking resumes.",
-       "गाड़ी वापस आने पर उसी कार्ड पर 'Return Vehicle' दबाएँ।"],
+      ["Tap the barcode icon next to the search bar to open the camera scanner.",
+       "सर्च बार के पास बारकोड आइकन दबाकर कैमरा स्कैनर खोलें।"],
+      ["Scan the barcode on the driver's entry slip. The matching vehicle is found and the Exit window opens automatically.",
+       "एंट्री पर्ची का बारकोड स्कैन करें। मेल खाती गाड़ी मिलते ही Exit विंडो अपने आप खुलती है।"],
     ],
   },
   {
