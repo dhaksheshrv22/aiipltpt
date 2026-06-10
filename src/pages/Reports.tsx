@@ -23,7 +23,7 @@ const COLORS = ["hsl(217,91%,60%)", "hsl(142,71%,45%)", "hsl(38,92%,50%)", "hsl(
 
 type Payment = { amount: number; paid_at: string | null; payment_mode: string; payment_type: string; vehicle_number: string };
 type History = { entry_time: string; exit_time: string; pricing_category: string; gross_amount: number; total_hours: number | null; vehicle_number: string };
-type ActiveVeh = { vehicle_number: string; pricing_category: string; entry_time: string; is_temporarily_out: boolean; temp_exit_time: string | null; return_time: string | null };
+type ActiveVeh = { vehicle_number: string; pricing_category: string; entry_time: string };
 
 export default function Reports() {
   const { data: payments = [] } = useQuery({
@@ -45,7 +45,7 @@ export default function Reports() {
   const { data: active = [] } = useQuery({
     queryKey: ["reports-active"],
     queryFn: async () => {
-      const { data } = await supabase.from("active_vehicles").select("vehicle_number, pricing_category, entry_time, is_temporarily_out, temp_exit_time, return_time");
+      const { data } = await supabase.from("active_vehicles").select("vehicle_number, pricing_category, entry_time");
       return (data ?? []) as any[];
     },
     refetchInterval: 60_000,
@@ -118,12 +118,12 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
   const upiTotal = sumByMode("UPI");
   const cardTotal = sumByMode("Card");
 
-  // Source breakdown (Advance / TempExit / Exit / Partial) × Mode
-  const SOURCES = ["Advance", "TempExit", "Exit", "Partial"];
+  // Source breakdown (Advance / Exit / Partial) × Mode
+  const SOURCES = ["Advance", "Exit", "Partial"];
   const sourceMatrix = SOURCES.map(src => {
     const rows = dayPayments.filter(p => p.payment_type === src);
     return {
-      source: src === "TempExit" ? "Temp Exit" : src,
+      source: src,
       cash: rows.filter(p => p.payment_mode === "Cash").reduce((s, p) => s + p.amount, 0),
       upi: rows.filter(p => p.payment_mode === "UPI").reduce((s, p) => s + p.amount, 0),
       card: rows.filter(p => p.payment_mode === "Card").reduce((s, p) => s + p.amount, 0),
@@ -137,17 +137,6 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
     ...history.filter(h => inDay(h.entry_time)).map(h => ({ vehicle_number: h.vehicle_number, pricing_category: h.pricing_category, entry_time: h.entry_time, status: "Exited" as const })),
   ].sort((a, b) => new Date(b.entry_time).getTime() - new Date(a.entry_time).getTime());
 
-  // Temp exits today: from active table (still out or returned same day)
-  const tempExitsToday = active
-    .filter(v => inDay(v.temp_exit_time))
-    .map(v => ({
-      vehicle_number: v.vehicle_number,
-      pricing_category: v.pricing_category,
-      temp_exit_time: v.temp_exit_time!,
-      return_time: v.return_time,
-      is_out: v.is_temporarily_out,
-    }))
-    .sort((a, b) => new Date(b.temp_exit_time).getTime() - new Date(a.temp_exit_time).getTime());
 
   const modeBreakdown = useMemo(() => {
     const map = new Map<string, number>();
@@ -194,17 +183,9 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
     dayHistory
       .sort((a, b) => new Date(b.exit_time).getTime() - new Date(a.exit_time).getTime())
       .forEach(h => out.push([format(new Date(h.exit_time), "HH:mm"), h.vehicle_number, h.pricing_category, h.gross_amount]));
-    out.push([""]);
-    out.push([`=== TEMPORARY REST TODAY (${tempExitsToday.length}) ===`]);
-    out.push(["Out At", "Vehicle", "Category", "Return Status"]);
-    tempExitsToday.forEach(t => out.push([
-      format(new Date(t.temp_exit_time), "HH:mm"),
-      t.vehicle_number,
-      t.pricing_category,
-      t.is_out ? "Still Out" : t.return_time ? `Returned ${format(new Date(t.return_time), "HH:mm")}` : "Returned",
-    ]));
     return out;
   };
+
 
   return (
     <div className="space-y-6">
@@ -278,10 +259,9 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="Entries Today" value={String(entriesToday.length)} />
         <StatCard label="Exits Today" value={String(vehicles)} />
-        <StatCard label="Temporary Rest" value={String(tempExitsToday.length)} />
         <StatCard label="Avg Bill" value={formatINR(avgBill)} />
       </div>
 
