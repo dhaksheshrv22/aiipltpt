@@ -100,16 +100,6 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    en: "8. Barcode Scan",
-    hi: "८. बारकोड स्कैन",
-    steps: [
-      ["Tap the barcode icon next to the search bar to open the camera scanner.",
-       "सर्च बार के पास बारकोड आइकन दबाकर कैमरा स्कैनर खोलें।"],
-      ["Scan the barcode on the driver's entry slip. The matching vehicle is found and the Exit window opens automatically.",
-       "एंट्री पर्ची का बारकोड स्कैन करें। मेल खाती गाड़ी मिलते ही Exit विंडो अपने आप खुलती है।"],
-    ],
-  },
-  {
     en: "9. Final Exit (Check-Out)",
     hi: "९. अंतिम निकास (चेक-आउट)",
     steps: [
