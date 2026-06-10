@@ -175,8 +175,6 @@ const SECTIONS: Section[] = [
        "UPI: डिजिटल भुगतान के QR कोड में उपयोग होने वाली UPI ID और नाम।"],
       ["Credit Limit: outstanding amount beyond which a vehicle is flagged 'OVER LIMIT'.",
        "क्रेडिट लिमिट: इससे ज़्यादा बकाया पर गाड़ी 'OVER LIMIT' दिखती है।"],
-      ["Rest Hours: maximum hours a vehicle may stay out during temporary exit before raising an overstay alert.",
-       "विश्राम घंटे: अस्थायी निकास में अधिकतम बाहर रहने का समय।"],
     ],
   },
   {
