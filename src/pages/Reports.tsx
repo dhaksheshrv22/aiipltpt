@@ -365,43 +365,6 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="text-lg">Temporary Rest — {label} ({tempExitsToday.length})</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 pr-3">Out At</th>
-                  <th className="pb-2 pr-3">Vehicle</th>
-                  <th className="pb-2 pr-3">Category</th>
-                  <th className="pb-2">Return</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tempExitsToday.length === 0 ? (
-                  <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">No temporary exits on this day.</td></tr>
-                ) : tempExitsToday.map((t, i) => (
-                  <tr key={i} className="border-b last:border-0">
-                    <td className="py-2 pr-3">{format(new Date(t.temp_exit_time), "HH:mm")}</td>
-                    <td className="py-2 pr-3 font-mono font-semibold">{t.vehicle_number}</td>
-                    <td className="py-2 pr-3">{t.pricing_category}</td>
-                    <td className="py-2">
-                      {t.is_out ? (
-                        <span className="px-2 py-0.5 rounded text-xs bg-warning/10 text-warning">Still Out</span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded text-xs bg-success/10 text-success">
-                          Returned{t.return_time ? ` at ${format(new Date(t.return_time), "HH:mm")}` : ""}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-lg">All Transactions — {label}</CardTitle></CardHeader>
