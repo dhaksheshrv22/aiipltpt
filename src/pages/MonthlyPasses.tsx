@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Printer, RotateCw, AlertTriangle, CalendarClock } from "lucide-react";
+import { Search, Plus, Printer, RotateCw, AlertTriangle, CalendarClock, Pencil } from "lucide-react";
 import { formatINR, formatDate } from "@/utils/pricing";
 import { getPassStatus, daysUntilExpiry } from "@/utils/monthlyPass";
 import MonthlyPassFormModal from "@/components/MonthlyPassFormModal";
 import MonthlyPassPrintModal from "@/components/MonthlyPassPrintModal";
+import MonthlyPassEditModal from "@/components/MonthlyPassEditModal";
 import Seo from "@/components/Seo";
 
 export default function MonthlyPasses() {
@@ -18,6 +19,7 @@ export default function MonthlyPasses() {
   const [filter, setFilter] = useState("all");
   const [formMode, setFormMode] = useState<{ mode: "create" | "renew"; pass?: any } | null>(null);
   const [printPass, setPrintPass] = useState<any>(null);
+  const [editPass, setEditPass] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const { data: passes = [], isLoading } = useQuery({
@@ -129,9 +131,12 @@ export default function MonthlyPasses() {
                       {formatDate(p.pass_start_date)} → {formatDate(p.pass_expiry_date)} • {formatINR(p.amount)} • {p.pass_id}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" onClick={() => setPrintPass(p)}>
                       <Printer className="w-4 h-4 mr-1" /> Print
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditPass(p)}>
+                      <Pencil className="w-4 h-4 mr-1" /> Edit
                     </Button>
                     <Button size="sm" onClick={() => setFormMode({ mode: "renew", pass: p })}>
                       <RotateCw className="w-4 h-4 mr-1" /> Renew
@@ -153,6 +158,7 @@ export default function MonthlyPasses() {
         />
       )}
       {printPass && <MonthlyPassPrintModal pass={printPass} onClose={() => setPrintPass(null)} />}
+      {editPass && <MonthlyPassEditModal pass={editPass} onClose={() => setEditPass(null)} onSuccess={refresh} />}
     </div>
   );
 }
