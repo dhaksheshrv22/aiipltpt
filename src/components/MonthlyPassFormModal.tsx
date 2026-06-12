@@ -52,8 +52,9 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
 
     setLoading(true);
 
+    const effectiveStatus = amountPaying >= monthlyAmount ? "Paid" : (amountPaying > 0 ? "Partial" : "Due");
+
     if (isRenew && pass) {
-      // Extend expiry: from later of (now, current expiry)
       const base = new Date(pass.pass_expiry_date) > new Date() ? new Date(pass.pass_expiry_date) : new Date();
       const newExpiry = addDays(base, 30);
       const { data, error } = await supabase.from("monthly_passes").update({
@@ -62,7 +63,7 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
         pricing_category: pricing.category,
         daily_rate: pricing.dailyRate,
         amount: pricing.monthlyAmount,
-        payment_status: paymentStatus,
+        payment_status: effectiveStatus,
         payment_mode: paymentMode,
         owner_name: ownerName || null,
         owner_mobile: ownerMobile,
@@ -70,13 +71,13 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
       }).eq("id", pass.id).select().single();
       if (error) { toast.error(error.message); setLoading(false); return; }
 
-      if (paymentStatus === "Paid") {
+      if (amountPaying > 0) {
         await supabase.from("payments").insert({
           vehicle_number: formattedVehicle,
           payment_type: "Monthly Pass Renewal",
-          amount: pricing.monthlyAmount,
+          amount: amountPaying,
           payment_mode: paymentMode,
-          notes: `Pass ${pass.pass_id} renewed`,
+          notes: `Pass ${pass.pass_id} renewed${remainingDue > 0 ? ` — ${formatINR(remainingDue)} pending` : ""}`,
         });
       }
       toast.success("Pass renewed");
