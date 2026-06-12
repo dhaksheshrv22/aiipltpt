@@ -58,9 +58,12 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const totalPaidPre = Math.max(ledgerTotal, advanceAmt);
   const balanceDue = Math.max(0, rawBill.grossAmount - totalPaidPre);
 
+  const amountPaying = amountPayingStr === "" ? balanceDue : Math.max(0, Math.min(balanceDue, parseFloat(amountPayingStr) || 0));
+  const remainingDue = Math.max(0, balanceDue - amountPaying);
+
   const handleExit = async () => {
     if (balanceDue > 0 && !confirmDue) {
-      toast.error("Confirm the outstanding balance before exit");
+      toast.error("Confirm the collected amount before exit");
       return;
     }
     setLoading(true);
@@ -79,27 +82,27 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
       total_days_billed: rawBill.billableDays,
       gross_amount: rawBill.grossAmount,
       advance_paid_amount: advanceAmt,
-      balance_amount: balanceDue,
+      balance_amount: remainingDue,
       payment_mode: vehicle.payment_mode,
       exit_payment_mode: exitPaymentMode,
-      final_payment_status: "Paid",
+      final_payment_status: remainingDue > 0 ? "Partial" : "Paid",
       token_number: vehicle.token_number ?? null,
     };
 
     const { data: historyEntry, error: histErr } = await supabase.from("vehicle_history").insert(historyRow).select().single();
     if (histErr) { toast.error("Exit failed: " + histErr.message); setLoading(false); return; }
 
-    if (balanceDue > 0) {
+    if (amountPaying > 0) {
       await supabase.from("payments").insert({
         history_vehicle_id: historyEntry.id,
         vehicle_number: vehicle.vehicle_number,
         payment_type: "Exit",
-        amount: balanceDue,
+        amount: amountPaying,
         payment_mode: exitPaymentMode,
+        notes: remainingDue > 0 ? `Partial — ${formatINR(remainingDue)} pending` : null,
       });
     }
 
-    // Link the active-session payments to the history record for the full ledger
     if (ledger.length > 0) {
       await supabase
         .from("payments")
@@ -109,19 +112,19 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
 
     await supabase.from("active_vehicles").delete().eq("id", vehicle.id);
 
-    const grandTotal = totalPaidPre + balanceDue;
+    const grandTotal = totalPaidPre + amountPaying;
     setReceipt({
       ...historyRow,
       receiptNo,
-      balancePaid: balanceDue,
+      balancePaid: amountPaying,
       totalPaid: grandTotal,
       ledger: [
         ...ledger,
-        ...(balanceDue > 0 ? [{
+        ...(amountPaying > 0 ? [{
           id: "exit",
           payment_type: "Exit",
           payment_mode: exitPaymentMode,
-          amount: balanceDue,
+          amount: amountPaying,
           paid_at: now.toISOString(),
         }] : []),
       ],
