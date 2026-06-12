@@ -19,6 +19,7 @@ export default function MonthlyPasses() {
   const [filter, setFilter] = useState("all");
   const [formMode, setFormMode] = useState<{ mode: "create" | "renew"; pass?: any } | null>(null);
   const [printPass, setPrintPass] = useState<any>(null);
+  const [editPass, setEditPass] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const { data: passes = [], isLoading } = useQuery({
