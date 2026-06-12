@@ -29,12 +29,18 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
   const [numWheels, setNumWheels] = useState(pass?.num_wheels ? String(pass.num_wheels) : "");
   const [paymentMode, setPaymentMode] = useState("Cash");
   const [paymentStatus, setPaymentStatus] = useState("Paid");
+  const [amountPayingStr, setAmountPayingStr] = useState("");
   const [loading, setLoading] = useState(false);
 
   const wheels = parseInt(numWheels) || 0;
   const pricing = wheels > 0 ? getMonthlyPrice(wheels) : null;
   const validMobile = /^[6-9]\d{9}$/.test(ownerMobile);
   const showWheelError = numWheels !== "" && !pricing;
+  const monthlyAmount = pricing?.monthlyAmount ?? 0;
+  const amountPaying = amountPayingStr === ""
+    ? (paymentStatus === "Paid" ? monthlyAmount : 0)
+    : Math.max(0, Math.min(monthlyAmount, parseFloat(amountPayingStr) || 0));
+  const remainingDue = Math.max(0, monthlyAmount - amountPaying);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,8 +52,9 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
 
     setLoading(true);
 
+    const effectiveStatus = amountPaying >= monthlyAmount ? "Paid" : (amountPaying > 0 ? "Partial" : "Due");
+
     if (isRenew && pass) {
-      // Extend expiry: from later of (now, current expiry)
       const base = new Date(pass.pass_expiry_date) > new Date() ? new Date(pass.pass_expiry_date) : new Date();
       const newExpiry = addDays(base, 30);
       const { data, error } = await supabase.from("monthly_passes").update({
@@ -56,7 +63,7 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
         pricing_category: pricing.category,
         daily_rate: pricing.dailyRate,
         amount: pricing.monthlyAmount,
-        payment_status: paymentStatus,
+        payment_status: effectiveStatus,
         payment_mode: paymentMode,
         owner_name: ownerName || null,
         owner_mobile: ownerMobile,
@@ -64,13 +71,13 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
       }).eq("id", pass.id).select().single();
       if (error) { toast.error(error.message); setLoading(false); return; }
 
-      if (paymentStatus === "Paid") {
+      if (amountPaying > 0) {
         await supabase.from("payments").insert({
           vehicle_number: formattedVehicle,
           payment_type: "Monthly Pass Renewal",
-          amount: pricing.monthlyAmount,
+          amount: amountPaying,
           payment_mode: paymentMode,
-          notes: `Pass ${pass.pass_id} renewed`,
+          notes: `Pass ${pass.pass_id} renewed${remainingDue > 0 ? ` — ${formatINR(remainingDue)} pending` : ""}`,
         });
       }
       toast.success("Pass renewed");
@@ -106,20 +113,20 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
       amount: pricing.monthlyAmount,
       pass_start_date: start.toISOString(),
       pass_expiry_date: expiry.toISOString(),
-      payment_status: paymentStatus,
+      payment_status: effectiveStatus,
       payment_mode: paymentMode,
       is_active: true,
     }).select().single();
 
     if (error) { toast.error(error.message); setLoading(false); return; }
 
-    if (paymentStatus === "Paid") {
+    if (amountPaying > 0) {
       await supabase.from("payments").insert({
         vehicle_number: formattedVehicle,
         payment_type: "Monthly Pass",
-        amount: pricing.monthlyAmount,
+        amount: amountPaying,
         payment_mode: paymentMode,
-        notes: `Pass ${passId} issued`,
+        notes: `Pass ${passId} issued${remainingDue > 0 ? ` — ${formatINR(remainingDue)} pending` : ""}`,
       });
     }
 
@@ -190,14 +197,32 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
             </RadioGroup>
           </div>
           <div>
-            <Label>Payment Status</Label>
-            <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Paid">Paid</SelectItem>
-                <SelectItem value="Due">Due</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Amount Paying Now</Label>
+            <Input
+              type="number"
+              min={0}
+              max={monthlyAmount || undefined}
+              step="1"
+              value={amountPayingStr}
+              onChange={e => setAmountPayingStr(e.target.value)}
+              placeholder={monthlyAmount ? String(monthlyAmount) : "0"}
+              className="mt-1"
+            />
+            {pricing && (
+              <div className="flex gap-2 mt-2 text-xs">
+                <Button type="button" size="sm" variant="outline" onClick={() => setAmountPayingStr(String(monthlyAmount))}>
+                  Full {formatINR(monthlyAmount)}
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => setAmountPayingStr(String(Math.round(monthlyAmount / 2)))}>Half</Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setAmountPayingStr("0")}>Due (0)</Button>
+              </div>
+            )}
+            {pricing && (
+              <p className="text-xs mt-2">
+                Status: <strong>{amountPaying >= monthlyAmount ? "Paid" : amountPaying > 0 ? "Partial" : "Due"}</strong>
+                {remainingDue > 0 && <span className="text-warning"> • Pending {formatINR(remainingDue)}</span>}
+              </p>
+            )}
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>

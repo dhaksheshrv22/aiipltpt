@@ -5,6 +5,7 @@ import { calculateBill, formatINR, formatDate, formatTime, formatDuration, gener
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const [loading, setLoading] = useState(false);
   const [receipt, setReceipt] = useState<any>(null);
   const [confirmDue, setConfirmDue] = useState(false);
+  const [amountPayingStr, setAmountPayingStr] = useState<string>("");
   const receiptSettings = useReceiptSettings();
 
   const { data: ledger = [] } = useQuery({
@@ -56,9 +58,12 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const totalPaidPre = Math.max(ledgerTotal, advanceAmt);
   const balanceDue = Math.max(0, rawBill.grossAmount - totalPaidPre);
 
+  const amountPaying = amountPayingStr === "" ? balanceDue : Math.max(0, Math.min(balanceDue, parseFloat(amountPayingStr) || 0));
+  const remainingDue = Math.max(0, balanceDue - amountPaying);
+
   const handleExit = async () => {
     if (balanceDue > 0 && !confirmDue) {
-      toast.error("Confirm the outstanding balance before exit");
+      toast.error("Confirm the collected amount before exit");
       return;
     }
     setLoading(true);
@@ -77,27 +82,27 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
       total_days_billed: rawBill.billableDays,
       gross_amount: rawBill.grossAmount,
       advance_paid_amount: advanceAmt,
-      balance_amount: balanceDue,
+      balance_amount: remainingDue,
       payment_mode: vehicle.payment_mode,
       exit_payment_mode: exitPaymentMode,
-      final_payment_status: "Paid",
+      final_payment_status: remainingDue > 0 ? "Partial" : "Paid",
       token_number: vehicle.token_number ?? null,
     };
 
     const { data: historyEntry, error: histErr } = await supabase.from("vehicle_history").insert(historyRow).select().single();
     if (histErr) { toast.error("Exit failed: " + histErr.message); setLoading(false); return; }
 
-    if (balanceDue > 0) {
+    if (amountPaying > 0) {
       await supabase.from("payments").insert({
         history_vehicle_id: historyEntry.id,
         vehicle_number: vehicle.vehicle_number,
         payment_type: "Exit",
-        amount: balanceDue,
+        amount: amountPaying,
         payment_mode: exitPaymentMode,
+        notes: remainingDue > 0 ? `Partial — ${formatINR(remainingDue)} pending` : null,
       });
     }
 
-    // Link the active-session payments to the history record for the full ledger
     if (ledger.length > 0) {
       await supabase
         .from("payments")
@@ -107,19 +112,19 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
 
     await supabase.from("active_vehicles").delete().eq("id", vehicle.id);
 
-    const grandTotal = totalPaidPre + balanceDue;
+    const grandTotal = totalPaidPre + amountPaying;
     setReceipt({
       ...historyRow,
       receiptNo,
-      balancePaid: balanceDue,
+      balancePaid: amountPaying,
       totalPaid: grandTotal,
       ledger: [
         ...ledger,
-        ...(balanceDue > 0 ? [{
+        ...(amountPaying > 0 ? [{
           id: "exit",
           payment_type: "Exit",
           payment_mode: exitPaymentMode,
-          amount: balanceDue,
+          amount: amountPaying,
           paid_at: now.toISOString(),
         }] : []),
       ],
@@ -210,13 +215,37 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
                 </RadioGroup>
               </div>
 
-              {exitPaymentMode === "UPI" && (
-                <UpiQR amount={balanceDue} vehicleNumber={vehicle.vehicle_number} />
+              <div>
+                <Label>Amount Paying Now</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={balanceDue}
+                  step="1"
+                  value={amountPayingStr}
+                  onChange={(e) => setAmountPayingStr(e.target.value)}
+                  placeholder={String(balanceDue)}
+                  className="mt-1"
+                />
+                <div className="flex gap-2 mt-2 text-xs">
+                  <Button type="button" size="sm" variant="outline" onClick={() => setAmountPayingStr(String(balanceDue))}>Full {formatINR(balanceDue)}</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setAmountPayingStr(String(Math.round(balanceDue / 2)))}>Half</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setAmountPayingStr("0")}>None</Button>
+                </div>
+                {remainingDue > 0 && (
+                  <p className="text-xs text-warning mt-2">
+                    Remaining due after this payment: <strong>{formatINR(remainingDue)}</strong>
+                  </p>
+                )}
+              </div>
+
+              {exitPaymentMode === "UPI" && amountPaying > 0 && (
+                <UpiQR amount={amountPaying} vehicleNumber={vehicle.vehicle_number} />
               )}
 
               <label className="flex items-start gap-2 text-sm cursor-pointer">
                 <Checkbox checked={confirmDue} onCheckedChange={(v) => setConfirmDue(!!v)} />
-                <span>I have collected {formatINR(balanceDue)} from the driver.</span>
+                <span>I have collected {formatINR(amountPaying)} from the driver{remainingDue > 0 ? ` (${formatINR(remainingDue)} remains due)` : ""}.</span>
               </label>
             </>
           )}
