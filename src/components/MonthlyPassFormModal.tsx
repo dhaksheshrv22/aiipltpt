@@ -29,12 +29,18 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
   const [numWheels, setNumWheels] = useState(pass?.num_wheels ? String(pass.num_wheels) : "");
   const [paymentMode, setPaymentMode] = useState("Cash");
   const [paymentStatus, setPaymentStatus] = useState("Paid");
+  const [amountPayingStr, setAmountPayingStr] = useState("");
   const [loading, setLoading] = useState(false);
 
   const wheels = parseInt(numWheels) || 0;
   const pricing = wheels > 0 ? getMonthlyPrice(wheels) : null;
   const validMobile = /^[6-9]\d{9}$/.test(ownerMobile);
   const showWheelError = numWheels !== "" && !pricing;
+  const monthlyAmount = pricing?.monthlyAmount ?? 0;
+  const amountPaying = amountPayingStr === ""
+    ? (paymentStatus === "Paid" ? monthlyAmount : 0)
+    : Math.max(0, Math.min(monthlyAmount, parseFloat(amountPayingStr) || 0));
+  const remainingDue = Math.max(0, monthlyAmount - amountPaying);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
