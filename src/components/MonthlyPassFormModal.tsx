@@ -197,14 +197,32 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
             </RadioGroup>
           </div>
           <div>
-            <Label>Payment Status</Label>
-            <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Paid">Paid</SelectItem>
-                <SelectItem value="Due">Due</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Amount Paying Now</Label>
+            <Input
+              type="number"
+              min={0}
+              max={monthlyAmount || undefined}
+              step="1"
+              value={amountPayingStr}
+              onChange={e => setAmountPayingStr(e.target.value)}
+              placeholder={monthlyAmount ? String(monthlyAmount) : "0"}
+              className="mt-1"
+            />
+            {pricing && (
+              <div className="flex gap-2 mt-2 text-xs">
+                <Button type="button" size="sm" variant="outline" onClick={() => setAmountPayingStr(String(monthlyAmount))}>
+                  Full {formatINR(monthlyAmount)}
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => setAmountPayingStr(String(Math.round(monthlyAmount / 2)))}>Half</Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setAmountPayingStr("0")}>Due (0)</Button>
+              </div>
+            )}
+            {pricing && (
+              <p className="text-xs mt-2">
+                Status: <strong>{amountPaying >= monthlyAmount ? "Paid" : amountPaying > 0 ? "Partial" : "Due"}</strong>
+                {remainingDue > 0 && <span className="text-warning"> • Pending {formatINR(remainingDue)}</span>}
+              </p>
+            )}
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
