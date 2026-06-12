@@ -131,9 +131,12 @@ export default function MonthlyPasses() {
                       {formatDate(p.pass_start_date)} → {formatDate(p.pass_expiry_date)} • {formatINR(p.amount)} • {p.pass_id}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" onClick={() => setPrintPass(p)}>
                       <Printer className="w-4 h-4 mr-1" /> Print
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditPass(p)}>
+                      <Pencil className="w-4 h-4 mr-1" /> Edit
                     </Button>
                     <Button size="sm" onClick={() => setFormMode({ mode: "renew", pass: p })}>
                       <RotateCw className="w-4 h-4 mr-1" /> Renew
