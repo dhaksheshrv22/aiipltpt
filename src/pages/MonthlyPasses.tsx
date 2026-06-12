@@ -158,6 +158,7 @@ export default function MonthlyPasses() {
         />
       )}
       {printPass && <MonthlyPassPrintModal pass={printPass} onClose={() => setPrintPass(null)} />}
+      {editPass && <MonthlyPassEditModal pass={editPass} onClose={() => setEditPass(null)} onSuccess={refresh} />}
     </div>
   );
 }
