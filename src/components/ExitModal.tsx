@@ -215,13 +215,37 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
                 </RadioGroup>
               </div>
 
-              {exitPaymentMode === "UPI" && (
-                <UpiQR amount={balanceDue} vehicleNumber={vehicle.vehicle_number} />
+              <div>
+                <Label>Amount Paying Now</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={balanceDue}
+                  step="1"
+                  value={amountPayingStr}
+                  onChange={(e) => setAmountPayingStr(e.target.value)}
+                  placeholder={String(balanceDue)}
+                  className="mt-1"
+                />
+                <div className="flex gap-2 mt-2 text-xs">
+                  <Button type="button" size="sm" variant="outline" onClick={() => setAmountPayingStr(String(balanceDue))}>Full {formatINR(balanceDue)}</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setAmountPayingStr(String(Math.round(balanceDue / 2)))}>Half</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setAmountPayingStr("0")}>None</Button>
+                </div>
+                {remainingDue > 0 && (
+                  <p className="text-xs text-warning mt-2">
+                    Remaining due after this payment: <strong>{formatINR(remainingDue)}</strong>
+                  </p>
+                )}
+              </div>
+
+              {exitPaymentMode === "UPI" && amountPaying > 0 && (
+                <UpiQR amount={amountPaying} vehicleNumber={vehicle.vehicle_number} />
               )}
 
               <label className="flex items-start gap-2 text-sm cursor-pointer">
                 <Checkbox checked={confirmDue} onCheckedChange={(v) => setConfirmDue(!!v)} />
-                <span>I have collected {formatINR(balanceDue)} from the driver.</span>
+                <span>I have collected {formatINR(amountPaying)} from the driver{remainingDue > 0 ? ` (${formatINR(remainingDue)} remains due)` : ""}.</span>
               </label>
             </>
           )}
