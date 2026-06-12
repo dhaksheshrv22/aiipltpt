@@ -113,20 +113,20 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
       amount: pricing.monthlyAmount,
       pass_start_date: start.toISOString(),
       pass_expiry_date: expiry.toISOString(),
-      payment_status: paymentStatus,
+      payment_status: effectiveStatus,
       payment_mode: paymentMode,
       is_active: true,
     }).select().single();
 
     if (error) { toast.error(error.message); setLoading(false); return; }
 
-    if (paymentStatus === "Paid") {
+    if (amountPaying > 0) {
       await supabase.from("payments").insert({
         vehicle_number: formattedVehicle,
         payment_type: "Monthly Pass",
-        amount: pricing.monthlyAmount,
+        amount: amountPaying,
         payment_mode: paymentMode,
-        notes: `Pass ${passId} issued`,
+        notes: `Pass ${passId} issued${remainingDue > 0 ? ` — ${formatINR(remainingDue)} pending` : ""}`,
       });
     }
 
