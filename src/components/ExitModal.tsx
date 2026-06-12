@@ -30,6 +30,7 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const [loading, setLoading] = useState(false);
   const [receipt, setReceipt] = useState<any>(null);
   const [confirmDue, setConfirmDue] = useState(false);
+  const [amountPayingStr, setAmountPayingStr] = useState<string>("");
   const receiptSettings = useReceiptSettings();
 
   const { data: ledger = [] } = useQuery({
