@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Printer, RotateCw, AlertTriangle, CalendarClock } from "lucide-react";
+import { Search, Plus, Printer, RotateCw, AlertTriangle, CalendarClock, Pencil } from "lucide-react";
 import { formatINR, formatDate } from "@/utils/pricing";
 import { getPassStatus, daysUntilExpiry } from "@/utils/monthlyPass";
 import MonthlyPassFormModal from "@/components/MonthlyPassFormModal";
 import MonthlyPassPrintModal from "@/components/MonthlyPassPrintModal";
+import MonthlyPassEditModal from "@/components/MonthlyPassEditModal";
 import Seo from "@/components/Seo";
 
 export default function MonthlyPasses() {
