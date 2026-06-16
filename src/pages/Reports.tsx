@@ -99,93 +99,34 @@ export default function Reports() {
 function DailyReport({ payments, history, active }: { payments: Payment[]; history: History[]; active: ActiveVeh[] }) {
   const today = format(new Date(), "yyyy-MM-dd");
   const [date, setDate] = useState<string>(today);
-  const [rangeDays, setRangeDays] = useState<number>(7);
 
   const selected = useMemo(() => parseISO(date), [date]);
   const dayStart = startOfDay(selected);
   const dayEnd = endOfDay(selected);
   const inDay = (d: string | null | undefined) => !!d && isWithinInterval(new Date(d), { start: dayStart, end: dayEnd });
 
-  const dayPayments = payments.filter(p => inDay(p.paid_at));
   const dayHistory = history.filter(h => inDay(h.exit_time));
-  const revenue = dayPayments.reduce((s, p) => s + p.amount, 0);
-  const vehicles = dayHistory.length;
-  const avgBill = vehicles ? Math.round(revenue / vehicles) : 0;
 
-  // Cash / UPI / Card totals
-  const sumByMode = (mode: string) => dayPayments.filter(p => p.payment_mode === mode).reduce((s, p) => s + p.amount, 0);
-  const cashTotal = sumByMode("Cash");
-  const upiTotal = sumByMode("UPI");
-  const cardTotal = sumByMode("Card");
-
-  // Source breakdown (Advance / Exit / Partial) × Mode
-  const SOURCES = ["Advance", "Exit", "Partial"];
-  const sourceMatrix = SOURCES.map(src => {
-    const rows = dayPayments.filter(p => p.payment_type === src);
-    return {
-      source: src,
-      cash: rows.filter(p => p.payment_mode === "Cash").reduce((s, p) => s + p.amount, 0),
-      upi: rows.filter(p => p.payment_mode === "UPI").reduce((s, p) => s + p.amount, 0),
-      card: rows.filter(p => p.payment_mode === "Card").reduce((s, p) => s + p.amount, 0),
-      total: rows.reduce((s, p) => s + p.amount, 0),
-    };
-  });
-
-  // Entries today: from active_vehicles entry_time + history entry_time
   const entriesToday = [
     ...active.filter(v => inDay(v.entry_time)).map(v => ({ vehicle_number: v.vehicle_number, pricing_category: v.pricing_category, entry_time: v.entry_time, status: "Active" as const })),
     ...history.filter(h => inDay(h.entry_time)).map(h => ({ vehicle_number: h.vehicle_number, pricing_category: h.pricing_category, entry_time: h.entry_time, status: "Exited" as const })),
   ].sort((a, b) => new Date(b.entry_time).getTime() - new Date(a.entry_time).getTime());
 
-
-  const modeBreakdown = useMemo(() => {
-    const map = new Map<string, number>();
-    dayPayments.forEach(p => map.set(p.payment_mode, (map.get(p.payment_mode) || 0) + p.amount));
-    return Array.from(map, ([name, value]) => ({ name, value }));
-  }, [dayPayments]);
-
-  const trend = useMemo(() => {
-    const end = endOfDay(selected);
-    const start = startOfDay(subDays(selected, rangeDays - 1));
-    return eachDayOfInterval({ start, end }).map(d => {
-      const dS = startOfDay(d), dE = endOfDay(d);
-      const rev = payments.filter(p => p.paid_at && isWithinInterval(new Date(p.paid_at), { start: dS, end: dE })).reduce((s, p) => s + p.amount, 0);
-      const veh = history.filter(h => isWithinInterval(new Date(h.exit_time), { start: dS, end: dE })).length;
-      return { day: format(d, "dd MMM"), revenue: rev, vehicles: veh };
-    });
-  }, [payments, history, selected, rangeDays]);
-
-  const txHead = ["Time", "Vehicle", "Type", "Mode", "Amount (INR)"];
-  const txRows = [...dayPayments]
-    .sort((a, b) => new Date(b.paid_at!).getTime() - new Date(a.paid_at!).getTime())
-    .map(p => [format(new Date(p.paid_at!), "HH:mm"), p.vehicle_number, p.payment_type, p.payment_mode, p.amount]);
+  const exitsSorted = [...dayHistory].sort((a, b) => new Date(b.exit_time).getTime() - new Date(a.exit_time).getTime());
 
   const label = format(selected, "dd MMM yyyy");
 
-  // Combined PDF/CSV export with all sections
   const buildExportRows = () => {
     const out: (string | number)[][] = [];
-    out.push(["=== COLLECTIONS BY SOURCE ==="]);
-    out.push(["Source", "Cash", "UPI", "Card", "Total"]);
-    sourceMatrix.forEach(r => out.push([r.source, r.cash, r.upi, r.card, r.total]));
-    out.push(["TOTAL", cashTotal, upiTotal, cardTotal, revenue]);
-    out.push([""]);
-    out.push(["=== TRANSACTIONS ==="]);
-    out.push(txHead);
-    txRows.forEach(r => out.push(r));
-    out.push([""]);
-    out.push([`=== ENTRIES TODAY (${entriesToday.length}) ===`]);
+    out.push([`=== ENTRIES (${entriesToday.length}) ===`]);
     out.push(["Time", "Vehicle", "Category", "Status"]);
     entriesToday.forEach(e => out.push([format(new Date(e.entry_time), "HH:mm"), e.vehicle_number, e.pricing_category, e.status]));
     out.push([""]);
-    out.push([`=== EXITS TODAY (${dayHistory.length}) ===`]);
+    out.push([`=== EXITS (${exitsSorted.length}) ===`]);
     out.push(["Time", "Vehicle", "Category", "Gross (INR)"]);
-    dayHistory
-      .sort((a, b) => new Date(b.exit_time).getTime() - new Date(a.exit_time).getTime())
-      .forEach(h => out.push([format(new Date(h.exit_time), "HH:mm"), h.vehicle_number, h.pricing_category, h.gross_amount]));
+    exitsSorted.forEach(h => out.push([format(new Date(h.exit_time), "HH:mm"), h.vehicle_number, h.pricing_category, h.gross_amount]));
     return out;
   };
-
 
   return (
     <div className="space-y-6">
@@ -195,110 +136,18 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
             <label className="text-xs text-muted-foreground block mb-1">Date</label>
             <Input type="date" value={date} max={today} onChange={e => setDate(e.target.value)} className="w-44" />
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Trend Range</label>
-            <Select value={String(rangeDays)} onValueChange={v => setRangeDays(Number(v))}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">Last 7 days</SelectItem>
-                <SelectItem value="14">Last 14 days</SelectItem>
-                <SelectItem value="30">Last 30 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           <Button variant="outline" size="sm" onClick={() => setDate(today)}>Today</Button>
         </div>
         <ExportButtons
-          onPdf={() => exportPdf(`Daily Report ${label}`, ["Section / Field", "A", "B", "C", "D"], buildExportRows())}
-          onXlsx={() => exportXlsx(`Daily_Report_${date}`, ["Section / Field", "A", "B", "C", "D"], buildExportRows())}
-          onCsv={() => exportCsv(`Daily_Report_${date}`, ["Section / Field", "A", "B", "C", "D"], buildExportRows())}
+          onPdf={() => exportPdf(`Daily Report ${label}`, ["Col A", "Col B", "Col C", "Col D"], buildExportRows())}
+          onXlsx={() => exportXlsx(`Daily_Report_${date}`, ["Col A", "Col B", "Col C", "Col D"], buildExportRows())}
+          onCsv={() => exportCsv(`Daily_Report_${date}`, ["Col A", "Col B", "Col C", "Col D"], buildExportRows())}
         />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Revenue" value={formatINR(revenue)} sub={<span className="text-muted-foreground">{label}</span>} />
-        <StatCard label="Cash" value={formatINR(cashTotal)} />
-        <StatCard label="UPI" value={formatINR(upiTotal)} />
-        <StatCard label="Card" value={formatINR(cardTotal)} />
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle className="text-lg">Collections by Source — {label}</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 pr-3">Source</th>
-                  <th className="pb-2 pr-3 text-right">Cash</th>
-                  <th className="pb-2 pr-3 text-right">UPI</th>
-                  <th className="pb-2 pr-3 text-right">Card</th>
-                  <th className="pb-2 text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sourceMatrix.map(r => (
-                  <tr key={r.source} className="border-b last:border-0">
-                    <td className="py-2 pr-3 font-medium">{r.source}</td>
-                    <td className="py-2 pr-3 text-right">{formatINR(r.cash)}</td>
-                    <td className="py-2 pr-3 text-right">{formatINR(r.upi)}</td>
-                    <td className="py-2 pr-3 text-right">{formatINR(r.card)}</td>
-                    <td className="py-2 text-right font-bold">{formatINR(r.total)}</td>
-                  </tr>
-                ))}
-                <tr className="border-t-2">
-                  <td className="py-2 pr-3 font-bold">TOTAL</td>
-                  <td className="py-2 pr-3 text-right font-bold">{formatINR(cashTotal)}</td>
-                  <td className="py-2 pr-3 text-right font-bold">{formatINR(upiTotal)}</td>
-                  <td className="py-2 pr-3 text-right font-bold">{formatINR(cardTotal)}</td>
-                  <td className="py-2 text-right font-bold">{formatINR(revenue)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard label="Entries Today" value={String(entriesToday.length)} />
-        <StatCard label="Exits Today" value={String(vehicles)} />
-        <StatCard label="Avg Bill" value={formatINR(avgBill)} />
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Revenue — Last {rangeDays} Days</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={trend}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="day" className="text-xs" />
-                <YAxis className="text-xs" />
-                <Tooltip formatter={(v: number) => formatINR(v)} />
-                <Bar dataKey="revenue" fill="hsl(217,91%,60%)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Payment Mode — {label}</CardTitle></CardHeader>
-          <CardContent>
-            {modeBreakdown.length === 0 ? (
-              <p className="text-center text-muted-foreground py-12">No payments on this day.</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie data={modeBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    {modeBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => formatINR(v)} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-4">
+        <StatCard label="Entries" value={String(entriesToday.length)} sub={<span className="text-muted-foreground">{label}</span>} />
+        <StatCard label="Exits" value={String(exitsSorted.length)} sub={<span className="text-muted-foreground">{label}</span>} />
       </div>
 
       <Card>
@@ -336,7 +185,7 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">Exits — {label} ({dayHistory.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">Exits — {label} ({exitsSorted.length})</CardTitle></CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -349,47 +198,14 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
                 </tr>
               </thead>
               <tbody>
-                {dayHistory.length === 0 ? (
+                {exitsSorted.length === 0 ? (
                   <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">No exits on this day.</td></tr>
-                ) : [...dayHistory].sort((a, b) => new Date(b.exit_time).getTime() - new Date(a.exit_time).getTime()).map((h, i) => (
+                ) : exitsSorted.map((h, i) => (
                   <tr key={i} className="border-b last:border-0">
                     <td className="py-2 pr-3">{format(new Date(h.exit_time), "HH:mm")}</td>
                     <td className="py-2 pr-3 font-mono font-semibold">{h.vehicle_number}</td>
                     <td className="py-2 pr-3">{h.pricing_category}</td>
                     <td className="py-2 text-right font-bold">{formatINR(h.gross_amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-
-      <Card>
-        <CardHeader><CardTitle className="text-lg">All Transactions — {label}</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 pr-3">Time</th>
-                  <th className="pb-2 pr-3">Vehicle</th>
-                  <th className="pb-2 pr-3">Type</th>
-                  <th className="pb-2 pr-3">Mode</th>
-                  <th className="pb-2 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {txRows.length === 0 ? (
-                  <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">No transactions on this day.</td></tr>
-                ) : txRows.map((r, i) => (
-                  <tr key={i} className="border-b last:border-0">
-                    <td className="py-2 pr-3">{r[0]}</td>
-                    <td className="py-2 pr-3 font-mono font-semibold">{r[1]}</td>
-                    <td className="py-2 pr-3">{r[2]}</td>
-                    <td className="py-2 pr-3">{r[3]}</td>
-                    <td className="py-2 text-right font-bold">{formatINR(r[4] as number)}</td>
                   </tr>
                 ))}
               </tbody>
