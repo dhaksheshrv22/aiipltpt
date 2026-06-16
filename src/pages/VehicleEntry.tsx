@@ -35,7 +35,7 @@ export default function VehicleEntry() {
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [driverMobile, setDriverMobile] = useState("");
   const [numWheels, setNumWheels] = useState("");
-  const [paymentMode, setPaymentMode] = useState("Cash");
+  const [paymentMode, setPaymentMode] = useState("");
   const [advancePaid, setAdvancePaid] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("Due");
   const [notes, setNotes] = useState("");
@@ -134,6 +134,12 @@ export default function VehicleEntry() {
     const formattedVehicle = vehicleNumber.toUpperCase().trim();
     if (!formattedVehicle) { toast.error("Enter vehicle number"); return; }
 
+    // Require payment mode confirmation only when a payment is actually being collected
+    if (advancePaid && !activePass && !paymentMode) {
+      toast.error("Please select the payment mode before continuing");
+      return;
+    }
+
     setLoading(true);
 
     // Check duplicate
@@ -154,7 +160,7 @@ export default function VehicleEntry() {
       num_wheels: wheels,
       pricing_category: pricing.category,
       daily_rate: hasActivePass ? 0 : pricing.dailyRate,
-      payment_mode: hasActivePass ? "Monthly Pass" : paymentMode,
+      payment_mode: hasActivePass ? "Monthly Pass" : (advancePaid ? paymentMode : "Due"),
       advance_paid: !hasActivePass && advancePaid,
       advance_amount: advanceAmount,
       payment_status: finalPaymentStatus,

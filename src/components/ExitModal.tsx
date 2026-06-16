@@ -26,7 +26,7 @@ function cleanCategory(cat: string): string {
 }
 
 export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalProps) {
-  const [exitPaymentMode, setExitPaymentMode] = useState(vehicle.payment_mode);
+  const [exitPaymentMode, setExitPaymentMode] = useState("");
   const [loading, setLoading] = useState(false);
   const [receipt, setReceipt] = useState<any>(null);
   const [confirmDue, setConfirmDue] = useState(false);
@@ -62,6 +62,10 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
   const remainingDue = Math.max(0, balanceDue - amountPaying);
 
   const handleExit = async () => {
+    if (balanceDue > 0 && amountPaying > 0 && !exitPaymentMode) {
+      toast.error("Please select the payment mode before continuing");
+      return;
+    }
     if (balanceDue > 0 && !confirmDue) {
       toast.error("Confirm the collected amount before exit");
       return;
