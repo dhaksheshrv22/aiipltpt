@@ -39,7 +39,7 @@ export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalPro
   const entryDate = new Date(vehicle.entry_time);
   const dateStr = entryDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   const timeStr = entryDate.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-  const isPaid = vehicle.advance_paid || vehicle.payment_mode !== "Due";
+  const showPaymentInfo = vehicle.advance_paid && vehicle.advance_amount > 0;
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -77,8 +77,8 @@ Rate     : Rs.${vehicle.daily_rate}/day
 Mobile   : ${vehicle.driver_mobile}
 Entry Dt : ${dateStr}
 Entry Tm : ${timeStr}
-${isPaid
-  ? `Pay Mode : ${vehicle.payment_mode}\nAdvance  : ${vehicle.advance_paid ? `Rs.${vehicle.advance_amount}` : "None"}`
+${showPaymentInfo
+  ? `Pay Mode : ${vehicle.payment_mode}\nAdvance  : Rs.${vehicle.advance_amount}`
   : `Payment  : Due`}
 ${DASH}
          ${footer1}
