@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock, Pencil, ScanBarcode, ReceiptText, Flag, Trash2, Printer } from "lucide-react";
+import { Search, Truck, Clock, Pencil, ScanBarcode, ReceiptText, Flag, Trash2, Printer, IndianRupee, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +40,11 @@ export default function ActiveVehicles() {
   const [deleteVehicle, setDeleteVehicle] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
   const [printVehicle, setPrintVehicle] = useState<any>(null);
+
+  const [quickPayId, setQuickPayId] = useState<string | null>(null);
+  const [quickPayAmount, setQuickPayAmount] = useState("");
+  const [quickPayMode, setQuickPayMode] = useState("");
+  const [quickPaySaving, setQuickPaySaving] = useState(false);
 
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
@@ -77,6 +82,29 @@ export default function ActiveVehicles() {
     toast.info(`Scanned: ${code}`);
     setSearch(code);
   }, []);
+
+  const handleSaveQuickPayment = async (vehicle: any) => {
+    const amt = parseFloat(quickPayAmount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (!quickPayMode) { toast.error("Please select the payment mode"); return; }
+    setQuickPaySaving(true);
+    const { error } = await supabase.from("payments").insert({
+      vehicle_id: vehicle.id,
+      vehicle_number: vehicle.vehicle_number,
+      payment_type: "Partial",
+      amount: amt,
+      payment_mode: quickPayMode,
+    });
+    setQuickPaySaving(false);
+    if (error) { toast.error("Failed: " + error.message); return; }
+    toast.success(`Payment of ${formatINR(amt)} added`);
+    setQuickPayId(null);
+    setQuickPayAmount("");
+    setQuickPayMode("");
+    queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
+    queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
+    queryClient.invalidateQueries({ queryKey: ["ledger", vehicle.id] });
+  };
 
   const filtered = vehicles.filter(v => {
     const matchesSearch = !search ||
@@ -180,19 +208,55 @@ export default function ActiveVehicles() {
                     </Badge>
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
-                      <ReceiptText className="w-3 h-3 mr-1" /> Ledger
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setPrintVehicle(v)} title="Print parking token">
-                      <Printer className="w-3 h-3 mr-1" /> Print
-                    </Button>
-                    <Button variant="outline" size="sm" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => setDeleteVehicle(v)} title="Delete entry (wrong data)">
-                      <Trash2 className="w-3 h-3 mr-1" /> Delete
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setEditVehicle(v)}>
-                      <Pencil className="w-3 h-3 mr-1" /> Edit
-                    </Button>
-                    <Button size="sm" className="flex-1" onClick={() => setExitVehicle(v)}>Exit</Button>
+                    {quickPayId === v.id ? (
+                      <div className="w-full space-y-2 border rounded-lg p-2 bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-sm">Add Payment</p>
+                          <Button variant="ghost" size="sm" onClick={() => { setQuickPayId(null); setQuickPayAmount(""); setQuickPayMode(""); }}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input type="number" min={1} step="1" value={quickPayAmount} onChange={e => setQuickPayAmount(e.target.value)} placeholder="Amount" className="flex-1" />
+                          {outstanding > 0 && (
+                            <Button variant="ghost" size="sm" onClick={() => setQuickPayAmount(String(outstanding))}>
+                              Full
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex gap-3">
+                          {["Cash", "UPI", "Card"].map(m => (
+                            <label key={m} className="flex items-center gap-1 text-sm cursor-pointer">
+                              <input type="radio" name={`quickpay-${v.id}`} value={m} checked={quickPayMode === m} onChange={() => setQuickPayMode(m)} className="accent-primary" />
+                              {m}
+                            </label>
+                          ))}
+                        </div>
+                        <Button size="sm" className="w-full" onClick={() => handleSaveQuickPayment(v)} disabled={quickPaySaving || !quickPayAmount || !quickPayMode}>
+                          <IndianRupee className="w-3 h-3 mr-1" />
+                          {quickPaySaving ? "Saving..." : "Save Payment"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => { setQuickPayId(v.id); setQuickPayAmount(""); setQuickPayMode(""); }}>
+                          <IndianRupee className="w-3 h-3 mr-1" /> Add Pay
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
+                          <ReceiptText className="w-3 h-3 mr-1" /> Ledger
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setPrintVehicle(v)} title="Print parking token">
+                          <Printer className="w-3 h-3 mr-1" /> Print
+                        </Button>
+                        <Button variant="outline" size="sm" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => setDeleteVehicle(v)} title="Delete entry (wrong data)">
+                          <Trash2 className="w-3 h-3 mr-1" /> Delete
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setEditVehicle(v)}>
+                          <Pencil className="w-3 h-3 mr-1" /> Edit
+                        </Button>
+                        <Button size="sm" className="flex-1" onClick={() => setExitVehicle(v)}>Exit</Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
