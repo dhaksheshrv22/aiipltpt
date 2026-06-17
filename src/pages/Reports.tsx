@@ -114,6 +114,19 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
 
   const exitsSorted = [...dayHistory].sort((a, b) => new Date(b.exit_time).getTime() - new Date(a.exit_time).getTime());
 
+  const dayPayments = payments
+    .filter(p => inDay(p.paid_at))
+    .sort((a, b) => new Date(b.paid_at!).getTime() - new Date(a.paid_at!).getTime());
+
+  const cashPayments = dayPayments.filter(p => (p.payment_mode || "").toLowerCase() === "cash");
+  const upiPayments = dayPayments.filter(p => (p.payment_mode || "").toLowerCase() === "upi");
+  const cardPayments = dayPayments.filter(p => (p.payment_mode || "").toLowerCase() === "card");
+
+  const sumAmt = (arr: Payment[]) => arr.reduce((s, p) => s + (p.amount || 0), 0);
+  const cashTotal = sumAmt(cashPayments);
+  const upiTotal = sumAmt(upiPayments);
+  const cardTotal = sumAmt(cardPayments);
+
   const label = format(selected, "dd MMM yyyy");
 
   const buildExportRows = () => {
@@ -125,6 +138,18 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
     out.push([`=== EXITS (${exitsSorted.length}) ===`]);
     out.push(["Time", "Vehicle", "Category", "Gross (INR)"]);
     exitsSorted.forEach(h => out.push([format(new Date(h.exit_time), "HH:mm"), h.vehicle_number, h.pricing_category, h.gross_amount]));
+    out.push([""]);
+    out.push([`=== PAYMENTS ADDED (${dayPayments.length}) ===`]);
+    out.push(["Time", "Vehicle", "Type", "Mode", "Amount (INR)"]);
+    dayPayments.forEach(p => out.push([format(new Date(p.paid_at!), "HH:mm"), p.vehicle_number, p.payment_type, p.payment_mode, p.amount]));
+    out.push([""]);
+    out.push([`=== CASH COLLECTION (${cashPayments.length}) — Total ${cashTotal} ===`]);
+    out.push(["Time", "Vehicle", "Type", "Amount (INR)"]);
+    cashPayments.forEach(p => out.push([format(new Date(p.paid_at!), "HH:mm"), p.vehicle_number, p.payment_type, p.amount]));
+    out.push([""]);
+    out.push([`=== UPI COLLECTION (${upiPayments.length}) — Total ${upiTotal} ===`]);
+    out.push(["Time", "Vehicle", "Type", "Amount (INR)"]);
+    upiPayments.forEach(p => out.push([format(new Date(p.paid_at!), "HH:mm"), p.vehicle_number, p.payment_type, p.amount]));
     return out;
   };
 
@@ -139,15 +164,17 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
           <Button variant="outline" size="sm" onClick={() => setDate(today)}>Today</Button>
         </div>
         <ExportButtons
-          onPdf={() => exportPdf(`Daily Report ${label}`, ["Col A", "Col B", "Col C", "Col D"], buildExportRows())}
-          onXlsx={() => exportXlsx(`Daily_Report_${date}`, ["Col A", "Col B", "Col C", "Col D"], buildExportRows())}
-          onCsv={() => exportCsv(`Daily_Report_${date}`, ["Col A", "Col B", "Col C", "Col D"], buildExportRows())}
+          onPdf={() => exportPdf(`Daily Report ${label}`, ["Col A", "Col B", "Col C", "Col D", "Col E"], buildExportRows())}
+          onXlsx={() => exportXlsx(`Daily_Report_${date}`, ["Col A", "Col B", "Col C", "Col D", "Col E"], buildExportRows())}
+          onCsv={() => exportCsv(`Daily_Report_${date}`, ["Col A", "Col B", "Col C", "Col D", "Col E"], buildExportRows())}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Entries" value={String(entriesToday.length)} sub={<span className="text-muted-foreground">{label}</span>} />
         <StatCard label="Exits" value={String(exitsSorted.length)} sub={<span className="text-muted-foreground">{label}</span>} />
+        <StatCard label="Cash Collected" value={formatINR(cashTotal)} sub={<span className="text-muted-foreground">{cashPayments.length} txn</span>} />
+        <StatCard label="UPI Collected" value={formatINR(upiTotal)} sub={<span className="text-muted-foreground">{upiPayments.length} txn</span>} />
       </div>
 
       <Card>
@@ -213,7 +240,100 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Payments Added — {label} ({dayPayments.length})</CardTitle></CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-2 pr-3">Time</th>
+                  <th className="pb-2 pr-3">Vehicle</th>
+                  <th className="pb-2 pr-3">Type</th>
+                  <th className="pb-2 pr-3">Mode</th>
+                  <th className="pb-2 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dayPayments.length === 0 ? (
+                  <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">No payments recorded on this day.</td></tr>
+                ) : dayPayments.map((p, i) => (
+                  <tr key={i} className="border-b last:border-0">
+                    <td className="py-2 pr-3">{format(new Date(p.paid_at!), "HH:mm")}</td>
+                    <td className="py-2 pr-3 font-mono font-semibold">{p.vehicle_number}</td>
+                    <td className="py-2 pr-3">
+                      <span className="px-2 py-0.5 rounded text-xs bg-muted">{p.payment_type}</span>
+                    </td>
+                    <td className="py-2 pr-3">{p.payment_mode}</td>
+                    <td className="py-2 text-right font-bold">{formatINR(p.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              {dayPayments.length > 0 && (
+                <tfoot>
+                  <tr className="border-t font-bold">
+                    <td colSpan={4} className="pt-2 text-right pr-3">Total</td>
+                    <td className="pt-2 text-right">{formatINR(sumAmt(dayPayments))}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CollectionTable title={`Cash Collection — ${label}`} rows={cashPayments} total={cashTotal} />
+        <CollectionTable title={`UPI Collection — ${label}`} rows={upiPayments} total={upiTotal} />
+      </div>
+
+      {cardPayments.length > 0 && (
+        <CollectionTable title={`Card Collection — ${label}`} rows={cardPayments} total={cardTotal} />
+      )}
     </div>
+  );
+}
+
+function CollectionTable({ title, rows, total }: { title: string; rows: Payment[]; total: number }) {
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-lg">{title} ({rows.length})</CardTitle></CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="pb-2 pr-3">Time</th>
+                <th className="pb-2 pr-3">Vehicle</th>
+                <th className="pb-2 pr-3">Type</th>
+                <th className="pb-2 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">No collection.</td></tr>
+              ) : rows.map((p, i) => (
+                <tr key={i} className="border-b last:border-0">
+                  <td className="py-2 pr-3">{format(new Date(p.paid_at!), "HH:mm")}</td>
+                  <td className="py-2 pr-3 font-mono font-semibold">{p.vehicle_number}</td>
+                  <td className="py-2 pr-3">{p.payment_type}</td>
+                  <td className="py-2 text-right font-bold">{formatINR(p.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+            {rows.length > 0 && (
+              <tfoot>
+                <tr className="border-t font-bold">
+                  <td colSpan={3} className="pt-2 text-right pr-3">Total</td>
+                  <td className="pt-2 text-right text-success">{formatINR(total)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
