@@ -83,6 +83,29 @@ export default function ActiveVehicles() {
     setSearch(code);
   }, []);
 
+  const handleSaveQuickPayment = async (vehicle: any) => {
+    const amt = parseFloat(quickPayAmount);
+    if (!amt || amt <= 0) { toast.error("Enter a valid amount"); return; }
+    if (!quickPayMode) { toast.error("Please select the payment mode"); return; }
+    setQuickPaySaving(true);
+    const { error } = await supabase.from("payments").insert({
+      vehicle_id: vehicle.id,
+      vehicle_number: vehicle.vehicle_number,
+      payment_type: "Partial",
+      amount: amt,
+      payment_mode: quickPayMode,
+    });
+    setQuickPaySaving(false);
+    if (error) { toast.error("Failed: " + error.message); return; }
+    toast.success(`Payment of ${formatINR(amt)} added`);
+    setQuickPayId(null);
+    setQuickPayAmount("");
+    setQuickPayMode("");
+    queryClient.invalidateQueries({ queryKey: ["paidByActiveVehicle"] });
+    queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
+    queryClient.invalidateQueries({ queryKey: ["ledger", vehicle.id] });
+  };
+
   const filtered = vehicles.filter(v => {
     const matchesSearch = !search ||
       v.vehicle_number.toLowerCase().includes(search.toLowerCase()) ||
