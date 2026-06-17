@@ -114,6 +114,19 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
 
   const exitsSorted = [...dayHistory].sort((a, b) => new Date(b.exit_time).getTime() - new Date(a.exit_time).getTime());
 
+  const dayPayments = payments
+    .filter(p => inDay(p.paid_at))
+    .sort((a, b) => new Date(b.paid_at!).getTime() - new Date(a.paid_at!).getTime());
+
+  const cashPayments = dayPayments.filter(p => (p.payment_mode || "").toLowerCase() === "cash");
+  const upiPayments = dayPayments.filter(p => (p.payment_mode || "").toLowerCase() === "upi");
+  const cardPayments = dayPayments.filter(p => (p.payment_mode || "").toLowerCase() === "card");
+
+  const sumAmt = (arr: Payment[]) => arr.reduce((s, p) => s + (p.amount || 0), 0);
+  const cashTotal = sumAmt(cashPayments);
+  const upiTotal = sumAmt(upiPayments);
+  const cardTotal = sumAmt(cardPayments);
+
   const label = format(selected, "dd MMM yyyy");
 
   const buildExportRows = () => {
@@ -125,6 +138,18 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
     out.push([`=== EXITS (${exitsSorted.length}) ===`]);
     out.push(["Time", "Vehicle", "Category", "Gross (INR)"]);
     exitsSorted.forEach(h => out.push([format(new Date(h.exit_time), "HH:mm"), h.vehicle_number, h.pricing_category, h.gross_amount]));
+    out.push([""]);
+    out.push([`=== PAYMENTS ADDED (${dayPayments.length}) ===`]);
+    out.push(["Time", "Vehicle", "Type", "Mode", "Amount (INR)"]);
+    dayPayments.forEach(p => out.push([format(new Date(p.paid_at!), "HH:mm"), p.vehicle_number, p.payment_type, p.payment_mode, p.amount]));
+    out.push([""]);
+    out.push([`=== CASH COLLECTION (${cashPayments.length}) — Total ${cashTotal} ===`]);
+    out.push(["Time", "Vehicle", "Type", "Amount (INR)"]);
+    cashPayments.forEach(p => out.push([format(new Date(p.paid_at!), "HH:mm"), p.vehicle_number, p.payment_type, p.amount]));
+    out.push([""]);
+    out.push([`=== UPI COLLECTION (${upiPayments.length}) — Total ${upiTotal} ===`]);
+    out.push(["Time", "Vehicle", "Type", "Amount (INR)"]);
+    upiPayments.forEach(p => out.push([format(new Date(p.paid_at!), "HH:mm"), p.vehicle_number, p.payment_type, p.amount]));
     return out;
   };
 
@@ -139,15 +164,17 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
           <Button variant="outline" size="sm" onClick={() => setDate(today)}>Today</Button>
         </div>
         <ExportButtons
-          onPdf={() => exportPdf(`Daily Report ${label}`, ["Col A", "Col B", "Col C", "Col D"], buildExportRows())}
-          onXlsx={() => exportXlsx(`Daily_Report_${date}`, ["Col A", "Col B", "Col C", "Col D"], buildExportRows())}
-          onCsv={() => exportCsv(`Daily_Report_${date}`, ["Col A", "Col B", "Col C", "Col D"], buildExportRows())}
+          onPdf={() => exportPdf(`Daily Report ${label}`, ["Col A", "Col B", "Col C", "Col D", "Col E"], buildExportRows())}
+          onXlsx={() => exportXlsx(`Daily_Report_${date}`, ["Col A", "Col B", "Col C", "Col D", "Col E"], buildExportRows())}
+          onCsv={() => exportCsv(`Daily_Report_${date}`, ["Col A", "Col B", "Col C", "Col D", "Col E"], buildExportRows())}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Entries" value={String(entriesToday.length)} sub={<span className="text-muted-foreground">{label}</span>} />
         <StatCard label="Exits" value={String(exitsSorted.length)} sub={<span className="text-muted-foreground">{label}</span>} />
+        <StatCard label="Cash Collected" value={formatINR(cashTotal)} sub={<span className="text-muted-foreground">{cashPayments.length} txn</span>} />
+        <StatCard label="UPI Collected" value={formatINR(upiTotal)} sub={<span className="text-muted-foreground">{upiPayments.length} txn</span>} />
       </div>
 
       <Card>
