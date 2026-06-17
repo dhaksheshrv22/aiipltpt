@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Truck, Clock, Pencil, ScanBarcode, ReceiptText, Flag, Trash2, Printer } from "lucide-react";
+import { Search, Truck, Clock, Pencil, ScanBarcode, ReceiptText, Flag, Trash2, Printer, IndianRupee, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
