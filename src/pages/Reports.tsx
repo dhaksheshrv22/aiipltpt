@@ -240,7 +240,100 @@ function DailyReport({ payments, history, active }: { payments: Payment[]; histo
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Payments Added — {label} ({dayPayments.length})</CardTitle></CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-2 pr-3">Time</th>
+                  <th className="pb-2 pr-3">Vehicle</th>
+                  <th className="pb-2 pr-3">Type</th>
+                  <th className="pb-2 pr-3">Mode</th>
+                  <th className="pb-2 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dayPayments.length === 0 ? (
+                  <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">No payments recorded on this day.</td></tr>
+                ) : dayPayments.map((p, i) => (
+                  <tr key={i} className="border-b last:border-0">
+                    <td className="py-2 pr-3">{format(new Date(p.paid_at!), "HH:mm")}</td>
+                    <td className="py-2 pr-3 font-mono font-semibold">{p.vehicle_number}</td>
+                    <td className="py-2 pr-3">
+                      <span className="px-2 py-0.5 rounded text-xs bg-muted">{p.payment_type}</span>
+                    </td>
+                    <td className="py-2 pr-3">{p.payment_mode}</td>
+                    <td className="py-2 text-right font-bold">{formatINR(p.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              {dayPayments.length > 0 && (
+                <tfoot>
+                  <tr className="border-t font-bold">
+                    <td colSpan={4} className="pt-2 text-right pr-3">Total</td>
+                    <td className="pt-2 text-right">{formatINR(sumAmt(dayPayments))}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CollectionTable title={`Cash Collection — ${label}`} rows={cashPayments} total={cashTotal} />
+        <CollectionTable title={`UPI Collection — ${label}`} rows={upiPayments} total={upiTotal} />
+      </div>
+
+      {cardPayments.length > 0 && (
+        <CollectionTable title={`Card Collection — ${label}`} rows={cardPayments} total={cardTotal} />
+      )}
     </div>
+  );
+}
+
+function CollectionTable({ title, rows, total }: { title: string; rows: Payment[]; total: number }) {
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-lg">{title} ({rows.length})</CardTitle></CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="pb-2 pr-3">Time</th>
+                <th className="pb-2 pr-3">Vehicle</th>
+                <th className="pb-2 pr-3">Type</th>
+                <th className="pb-2 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr><td colSpan={4} className="py-6 text-center text-muted-foreground">No collection.</td></tr>
+              ) : rows.map((p, i) => (
+                <tr key={i} className="border-b last:border-0">
+                  <td className="py-2 pr-3">{format(new Date(p.paid_at!), "HH:mm")}</td>
+                  <td className="py-2 pr-3 font-mono font-semibold">{p.vehicle_number}</td>
+                  <td className="py-2 pr-3">{p.payment_type}</td>
+                  <td className="py-2 text-right font-bold">{formatINR(p.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+            {rows.length > 0 && (
+              <tfoot>
+                <tr className="border-t font-bold">
+                  <td colSpan={3} className="pt-2 text-right pr-3">Total</td>
+                  <td className="pt-2 text-right text-success">{formatINR(total)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
