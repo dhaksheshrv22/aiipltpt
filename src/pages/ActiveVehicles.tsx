@@ -208,19 +208,55 @@ export default function ActiveVehicles() {
                     </Badge>
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
-                      <ReceiptText className="w-3 h-3 mr-1" /> Ledger
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setPrintVehicle(v)} title="Print parking token">
-                      <Printer className="w-3 h-3 mr-1" /> Print
-                    </Button>
-                    <Button variant="outline" size="sm" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => setDeleteVehicle(v)} title="Delete entry (wrong data)">
-                      <Trash2 className="w-3 h-3 mr-1" /> Delete
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setEditVehicle(v)}>
-                      <Pencil className="w-3 h-3 mr-1" /> Edit
-                    </Button>
-                    <Button size="sm" className="flex-1" onClick={() => setExitVehicle(v)}>Exit</Button>
+                    {quickPayId === v.id ? (
+                      <div className="w-full space-y-2 border rounded-lg p-2 bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-sm">Add Payment</p>
+                          <Button variant="ghost" size="sm" onClick={() => { setQuickPayId(null); setQuickPayAmount(""); setQuickPayMode(""); }}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input type="number" min={1} step="1" value={quickPayAmount} onChange={e => setQuickPayAmount(e.target.value)} placeholder="Amount" className="flex-1" />
+                          {outstanding > 0 && (
+                            <Button variant="ghost" size="sm" onClick={() => setQuickPayAmount(String(outstanding))}>
+                              Full
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex gap-3">
+                          {["Cash", "UPI", "Card"].map(m => (
+                            <label key={m} className="flex items-center gap-1 text-sm cursor-pointer">
+                              <input type="radio" name={`quickpay-${v.id}`} value={m} checked={quickPayMode === m} onChange={() => setQuickPayMode(m)} className="accent-primary" />
+                              {m}
+                            </label>
+                          ))}
+                        </div>
+                        <Button size="sm" className="w-full" onClick={() => handleSaveQuickPayment(v)} disabled={quickPaySaving || !quickPayAmount || !quickPayMode}>
+                          <IndianRupee className="w-3 h-3 mr-1" />
+                          {quickPaySaving ? "Saving..." : "Save Payment"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => { setQuickPayId(v.id); setQuickPayAmount(""); setQuickPayMode(""); }}>
+                          <IndianRupee className="w-3 h-3 mr-1" /> Add Pay
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setLedgerVehicle(v)}>
+                          <ReceiptText className="w-3 h-3 mr-1" /> Ledger
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setPrintVehicle(v)} title="Print parking token">
+                          <Printer className="w-3 h-3 mr-1" /> Print
+                        </Button>
+                        <Button variant="outline" size="sm" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => setDeleteVehicle(v)} title="Delete entry (wrong data)">
+                          <Trash2 className="w-3 h-3 mr-1" /> Delete
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setEditVehicle(v)}>
+                          <Pencil className="w-3 h-3 mr-1" /> Edit
+                        </Button>
+                        <Button size="sm" className="flex-1" onClick={() => setExitVehicle(v)}>Exit</Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
