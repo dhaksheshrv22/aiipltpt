@@ -41,6 +41,11 @@ export default function ActiveVehicles() {
   const [deleting, setDeleting] = useState(false);
   const [printVehicle, setPrintVehicle] = useState<any>(null);
 
+  const [quickPayId, setQuickPayId] = useState<string | null>(null);
+  const [quickPayAmount, setQuickPayAmount] = useState("");
+  const [quickPayMode, setQuickPayMode] = useState("");
+  const [quickPaySaving, setQuickPaySaving] = useState(false);
+
   const [, setTick] = useState(0);
   const queryClient = useQueryClient();
   const { creditLimit } = useUpiSettings();
