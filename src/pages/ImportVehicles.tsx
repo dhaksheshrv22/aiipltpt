@@ -1,16 +1,16 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { parse } from "date-fns";
+import { parse, format } from "date-fns";
 import { getPricingDetails } from "@/utils/pricing";
-import { Trash2, Upload } from "lucide-react";
+import { Trash2, Upload, FileSpreadsheet } from "lucide-react";
 
 type Row = {
   vehicle_number: string;
