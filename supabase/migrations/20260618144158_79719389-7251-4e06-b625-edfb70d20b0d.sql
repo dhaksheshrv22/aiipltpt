@@ -1,0 +1,1 @@
+ALTER TABLE public.vehicle_history ALTER COLUMN payment_mode DROP NOT NULL;

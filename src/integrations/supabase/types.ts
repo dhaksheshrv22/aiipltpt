@@ -432,7 +432,7 @@ export type Database = {
           gross_amount: number
           id: string
           num_wheels: number
-          payment_mode: string
+          payment_mode: string | null
           pricing_category: string
           return_time: string | null
           shift_id: string | null
@@ -458,7 +458,7 @@ export type Database = {
           gross_amount: number
           id?: string
           num_wheels: number
-          payment_mode: string
+          payment_mode?: string | null
           pricing_category: string
           return_time?: string | null
           shift_id?: string | null
@@ -484,7 +484,7 @@ export type Database = {
           gross_amount?: number
           id?: string
           num_wheels?: number
-          payment_mode?: string
+          payment_mode?: string | null
           pricing_category?: string
           return_time?: string | null
           shift_id?: string | null
