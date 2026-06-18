@@ -151,7 +151,9 @@ export default function VehicleEntry() {
     }
 
     const hasActivePass = !!activePass;
-    const finalPaymentStatus = hasActivePass ? "Paid" : (advancePaid ? "Paid" : paymentStatus);
+    // Auto-mark Paid if user picked a payment mode (even without toggling advance)
+    const autoPaid = !!paymentMode && !hasActivePass;
+    const finalPaymentStatus = hasActivePass ? "Paid" : (advancePaid || autoPaid ? "Paid" : paymentStatus);
     const advanceAmount = hasActivePass ? 0 : (advancePaid ? pricing.dailyRate : 0);
 
     const { data: vehicle, error } = await supabase.from("active_vehicles").insert({
