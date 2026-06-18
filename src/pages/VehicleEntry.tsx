@@ -385,18 +385,10 @@ export default function VehicleEntry() {
               <Switch id="advance" checked={advancePaid} onCheckedChange={setAdvancePaid} />
             </div>
 
-            {!advancePaid && (
-              <div>
-                <Label>Payment Status</Label>
-                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Paid">Paid</SelectItem>
-                    <SelectItem value="Due">Due</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground">
+              Payment Status is set automatically: <b>Paid</b> when a payment mode or advance is chosen, otherwise <b>Due</b>.
+            </div>
+
 
             <div>
               <Label htmlFor="notes">Notes (optional)</Label>
