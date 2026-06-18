@@ -34,7 +34,7 @@ const App = () => (
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/entry" element={<VehicleEntry />} />
-            <Route path="/import" element={<ImportVehicles />} />
+            
             <Route path="/active-vehicles" element={<ActiveVehicles />} />
             <Route path="/stock" element={<VehicleStock />} />
             <Route path="/monthly-passes" element={<MonthlyPasses />} />
