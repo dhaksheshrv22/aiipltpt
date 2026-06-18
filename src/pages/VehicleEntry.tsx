@@ -198,6 +198,7 @@ export default function VehicleEntry() {
         payment_type: "Advance",
         amount: advanceAmount,
         payment_mode: paymentMode,
+        paid_at: vehicle.entry_time,
       }).then(({ error: pErr }) => {
         if (pErr) toast.error("Advance payment log failed: " + pErr.message);
       });
