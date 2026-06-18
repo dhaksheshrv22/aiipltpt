@@ -409,8 +409,8 @@ export default function VehicleEntry() {
                 <span className="text-muted-foreground">Advance:</span>
                 <span>{advancePaid ? formatINR(pricing.dailyRate) : "None"}</span>
                 <span className="text-muted-foreground">Status:</span>
-                <span className={(advancePaid || !!paymentMode || hasActivePass) ? "text-success font-medium" : "text-warning font-medium"}>
-                  {(advancePaid || !!paymentMode || hasActivePass) ? "Paid" : "Due"}
+                <span className={(advancePaid || !!paymentMode || !!activePass) ? "text-success font-medium" : "text-warning font-medium"}>
+                  {(advancePaid || !!paymentMode || !!activePass) ? "Paid" : "Due"}
                 </span>
               </div>
             </CardContent>
