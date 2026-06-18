@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useInterval } from "@/hooks/useInterval";
 import {
-  LayoutDashboard, Truck, PlusCircle, History, BarChart3, Settings, LogOut, Menu, BadgeCheck, Boxes, BookOpen, Trash2, Upload
+  LayoutDashboard, Truck, PlusCircle, History, BarChart3, Settings, LogOut, Menu, BadgeCheck, Boxes, BookOpen, Trash2
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ const navItems = [
   { to: "/monthly-passes", icon: BadgeCheck, label: "Monthly Passes" },
   { to: "/history", icon: History, label: "Vehicle History" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
-  { to: "/import", icon: Upload, label: "Import Vehicles" },
   
   { to: "/settings", icon: Settings, label: "Settings" },
   { to: "/recycle-bin", icon: Trash2, label: "Recycle Bin" },

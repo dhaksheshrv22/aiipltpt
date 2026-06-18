@@ -14,7 +14,7 @@ import MonthlyPasses from "./pages/MonthlyPasses";
 import VehicleStock from "./pages/VehicleStock";
 import Help from "./pages/Help";
 import RecycleBin from "./pages/RecycleBin";
-import ImportVehicles from "./pages/ImportVehicles";
+
 
 import AppLayout from "./components/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -34,7 +34,7 @@ const App = () => (
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/entry" element={<VehicleEntry />} />
-            <Route path="/import" element={<ImportVehicles />} />
+            
             <Route path="/active-vehicles" element={<ActiveVehicles />} />
             <Route path="/stock" element={<VehicleStock />} />
             <Route path="/monthly-passes" element={<MonthlyPasses />} />
