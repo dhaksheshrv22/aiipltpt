@@ -236,23 +236,25 @@ export default function ImportVehicles() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">1. Paste rows</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">1. Upload spreadsheet</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <Label className="text-xs text-muted-foreground">
-            Columns (in order): Vehicle Number, Phone Number, Entry Date, Entry Time, Wheel Category.
-            Date e.g. <code>17-Jun-26</code>, time <code>13:43</code>, category like <code>4</code>, <code>6</code>, <code>4-6</code>, <code>7-10</code>, <code>15-20</code>.
+            Upload an Excel (.xlsx, .xls) or CSV file. Expected columns: Vehicle Number, Phone Number, Entry Date, Entry Time, Wheel Category. A header row is auto-detected.
           </Label>
-          <Textarea
-            value={paste}
-            onChange={e => setPaste(e.target.value)}
-            placeholder={"HR55AD0714\t9958939901\t17-Jun-26\t13:43\t4-6\nTN23BU9318\t8973166866\t17-Jun-26\t16:28\t4"}
-            rows={6}
-            className="font-mono text-xs"
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv,.ods"
+            className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
           />
-          <div className="flex gap-2">
-            <Button onClick={handleParse}><Upload className="w-4 h-4 mr-2" />Parse</Button>
-            <Button variant="outline" onClick={() => { setRows([...rows, emptyRow()]); }}>Add empty row</Button>
-            <Button variant="ghost" onClick={() => { setPaste(""); setRows([]); setResults(null); }}>Clear</Button>
+          <div className="flex flex-wrap gap-2 items-center">
+            <Button onClick={() => fileInputRef.current?.click()}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />Choose file
+            </Button>
+            <Button variant="outline" onClick={() => setRows([...rows, emptyRow()])}>Add empty row</Button>
+            <Button variant="ghost" onClick={() => { setRows([]); setResults(null); setFileName(""); }}>Clear</Button>
+            {fileName && <span className="text-sm text-muted-foreground">{fileName}</span>}
           </div>
         </CardContent>
       </Card>
