@@ -38,7 +38,11 @@ export default function LedgerModal({ vehicle, onClose }: LedgerModalProps) {
 
   const now = new Date();
   const bill = calculateBill(new Date(vehicle.entry_time), now, vehicle.daily_rate, vehicle.advance_paid ?? false);
-  const totalPaid = payments.reduce((s, p: any) => s + (p.amount ?? 0), 0);
+  const recordedPaid = payments.reduce((s, p: any) => s + (p.amount ?? 0), 0);
+  // Safety net: if advance was paid on entry but no Advance ledger row exists, count it anyway.
+  const hasAdvanceRow = payments.some((p: any) => p.payment_type === "Advance");
+  const advanceFallback = vehicle.advance_paid && !hasAdvanceRow ? (vehicle.advance_amount ?? 0) : 0;
+  const totalPaid = recordedPaid + advanceFallback;
   const outstanding = Math.max(0, bill.grossAmount - totalPaid);
 
   let running = 0;
