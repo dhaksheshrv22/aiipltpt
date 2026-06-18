@@ -49,6 +49,13 @@ export default function EditVehicleModal({ vehicle, onClose, onSaved }: EditVehi
 
     setSaving(true);
 
+    // Derive payment_status: Paid when monthly pass, or when an advance is collected
+    const derivedStatus = vehicle.is_monthly_pass
+      ? "Paid"
+      : advancePaid && advAmt > 0
+        ? "Paid"
+        : (vehicle.payment_status === "Paid" ? "Due" : vehicle.payment_status || "Due");
+
     const update: any = {
       entry_time: newEntryTime.toISOString(),
       driver_mobile: driverMobile.trim(),
@@ -59,13 +66,15 @@ export default function EditVehicleModal({ vehicle, onClose, onSaved }: EditVehi
       payment_mode: paymentMode,
       advance_paid: advancePaid,
       advance_amount: advAmt,
+      payment_status: derivedStatus,
       notes: notes.trim() || null,
     };
 
     const { error } = await supabase.from("active_vehicles").update(update).eq("id", vehicle.id);
     if (error) { setSaving(false); toast.error("Failed to update: " + error.message); return; }
 
-    // Sync the original Advance payment row (if any) so reports stay accurate.
+    // Sync the Advance payment row. NOTE: `payments` RLS forbids UPDATE,
+    // so we delete the existing advance row and re-insert with the new values.
     const { data: existingAdv } = await supabase
       .from("payments")
       .select("id")
@@ -73,25 +82,22 @@ export default function EditVehicleModal({ vehicle, onClose, onSaved }: EditVehi
       .eq("payment_type", "Advance")
       .maybeSingle();
 
+    if (existingAdv) {
+      const { error: delErr } = await supabase.from("payments").delete().eq("id", existingAdv.id);
+      if (delErr) { setSaving(false); toast.error("Failed to clear old advance: " + delErr.message); return; }
+    }
+
     if (advancePaid && advAmt > 0) {
-      const advancePayload: any = {
+      const { error: insErr } = await supabase.from("payments").insert({
+        vehicle_id: vehicle.id,
+        vehicle_number: vehicleNumber.trim().toUpperCase(),
+        payment_type: "Advance",
         amount: advAmt,
         payment_mode: paymentMode,
-        vehicle_number: vehicleNumber.trim().toUpperCase(),
         notes: txnRef.trim() ? `Txn Ref: ${txnRef.trim()}` : null,
         paid_at: newEntryTime.toISOString(),
-      };
-      if (existingAdv) {
-        await supabase.from("payments").update(advancePayload).eq("id", existingAdv.id);
-      } else {
-        await supabase.from("payments").insert({
-          ...advancePayload,
-          vehicle_id: vehicle.id,
-          payment_type: "Advance",
-        });
-      }
-    } else if (existingAdv) {
-      await supabase.from("payments").delete().eq("id", existingAdv.id);
+      });
+      if (insErr) { setSaving(false); toast.error("Failed to save advance payment: " + insErr.message); return; }
     }
 
     setSaving(false);
