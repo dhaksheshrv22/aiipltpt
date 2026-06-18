@@ -110,7 +110,8 @@ export function formatTime(date: Date | string): string {
 }
 
 export function generateReceiptNumber(prefix: string = "AIIPL"): string {
+  // Fallback only (used when token RPC is unavailable). Prefer DB-issued tokens.
   const year = new Date().getFullYear();
-  const serial = Math.floor(1000 + Math.random() * 9000);
-  return `${prefix}-${year}-${String(serial).padStart(4, "0")}`;
+  const ts = Date.now().toString().slice(-6);
+  return `${prefix}-${year}-${ts}`;
 }

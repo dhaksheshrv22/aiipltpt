@@ -275,10 +275,9 @@ export default function ActiveVehicles() {
       {exitVehicle && (
         <ExitModal
           vehicle={exitVehicle}
-          onClose={() => { setExitVehicle(null); setSearch(""); }}
+          onClose={() => setExitVehicle(null)}
           onComplete={() => {
             setExitVehicle(null);
-            setSearch("");
             queryClient.invalidateQueries({ queryKey: ["activeVehicles"] });
             queryClient.invalidateQueries({ queryKey: ["activeVehicleCount"] });
           }}
