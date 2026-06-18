@@ -71,7 +71,7 @@ export default function Dashboard() {
     refetchInterval: 120000,
   });
 
-  const overstayVehicles = activeVehicles.filter(v => isOverstay(v.entry_time));
+  const overstayVehicles = activeVehicles.filter(v => isOverstay(v.entry_time, v.is_monthly_pass));
 
   const stats = [
     { label: "Active Vehicles", value: activeVehicles.length, icon: Truck, color: "text-primary" },

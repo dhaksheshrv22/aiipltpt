@@ -95,8 +95,15 @@ export default function ActiveVehicles() {
       amount: amt,
       payment_mode: quickPayMode,
     });
+    if (error) { setQuickPaySaving(false); toast.error("Failed: " + error.message); return; }
+
+    // Flip payment_status to Paid if outstanding is now cleared
+    const bill = calculateBill(new Date(vehicle.entry_time), new Date(), vehicle.daily_rate, vehicle.advance_paid ?? false);
+    const previousPaid = (paidByVehicle as Record<string, number>)[vehicle.id] ?? 0;
+    if (previousPaid + amt >= bill.grossAmount && vehicle.payment_status !== "Paid") {
+      await supabase.from("active_vehicles").update({ payment_status: "Paid", payment_mode: vehicle.payment_mode ?? quickPayMode }).eq("id", vehicle.id);
+    }
     setQuickPaySaving(false);
-    if (error) { toast.error("Failed: " + error.message); return; }
     toast.success(`Payment of ${formatINR(amt)} added`);
     setQuickPayId(null);
     setQuickPayAmount("");
@@ -111,7 +118,7 @@ export default function ActiveVehicles() {
       v.vehicle_number.toLowerCase().includes(search.toLowerCase()) ||
       v.driver_mobile.includes(search);
     if (!matchesSearch) return false;
-    if (filter === "overstay") return isOverstay(v.entry_time);
+    if (filter === "overstay") return isOverstay(v.entry_time, v.is_monthly_pass);
     if (filter === "advance") return v.advance_paid;
     if (filter === "due") return v.payment_status === "Due";
     return true;
@@ -154,7 +161,7 @@ export default function ActiveVehicles() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(v => {
-            const overstay = isOverstay(v.entry_time);
+            const overstay = isOverstay(v.entry_time, v.is_monthly_pass);
             const bill = calculateBill(new Date(v.entry_time), now, v.daily_rate, v.advance_paid ?? false);
             const paid = (paidByVehicle as Record<string, number>)[v.id] ?? 0;
             const outstanding = v.payment_status === "Paid" ? 0 : Math.max(0, bill.grossAmount - paid);

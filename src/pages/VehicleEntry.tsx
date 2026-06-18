@@ -172,7 +172,10 @@ export default function VehicleEntry() {
     }).select().single();
 
     if (error) {
-      toast.error("Failed to register: " + error.message);
+      const msg = (error as any).code === "23505"
+        ? `Vehicle ${formattedVehicle} is already parked. Please process exit first.`
+        : "Failed to register: " + error.message;
+      toast.error(msg);
       setLoading(false);
       return;
     }
