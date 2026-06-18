@@ -1,16 +1,16 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { parse } from "date-fns";
+import { parse, format } from "date-fns";
 import { getPricingDetails } from "@/utils/pricing";
-import { Trash2, Upload } from "lucide-react";
+import { Trash2, Upload, FileSpreadsheet } from "lucide-react";
 
 type Row = {
   vehicle_number: string;
@@ -78,7 +78,8 @@ function parsePaste(text: string): Row[] {
 }
 
 export default function ImportVehicles() {
-  const [paste, setPaste] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string>("");
   const [rows, setRows] = useState<Row[]>([]);
   const [importing, setImporting] = useState(false);
   const [results, setResults] = useState<{ ok: number; fail: { vehicle: string; reason: string }[] } | null>(null);
@@ -97,16 +98,89 @@ export default function ImportVehicles() {
 
   const validCount = previews.filter(p => p.errors.length === 0).length;
 
-  const handleParse = () => {
-    const parsed = parsePaste(paste);
-    if (parsed.length === 0) {
-      toast.error("Could not detect any rows. Paste tab- or comma-separated data.");
-      return;
-    }
-    setRows(parsed);
-    setResults(null);
-    toast.success(`Parsed ${parsed.length} row(s)`);
+  // Map various header names to our canonical fields
+  const HEADER_MAP: Record<string, keyof Row> = {
+    "vehicle number": "vehicle_number", "vehicle no": "vehicle_number", "vehicle": "vehicle_number",
+    "vehicle_number": "vehicle_number", "reg no": "vehicle_number", "reg. no": "vehicle_number",
+    "phone": "driver_mobile", "phone number": "driver_mobile", "mobile": "driver_mobile",
+    "mobile number": "driver_mobile", "driver mobile": "driver_mobile", "contact": "driver_mobile",
+    "entry date": "entry_date", "date": "entry_date",
+    "entry time": "entry_time", "time": "entry_time",
+    "category": "category", "wheel": "category", "wheels": "category",
+    "wheel category": "category", "type": "category",
   };
+
+  const cellToDate = (v: any): { date: string; time: string } => {
+    if (v == null || v === "") return { date: "", time: "" };
+    if (v instanceof Date) {
+      return { date: format(v, "dd-MMM-yy"), time: format(v, "HH:mm") };
+    }
+    return { date: String(v).trim(), time: "" };
+  };
+
+  const cellToTime = (v: any): string => {
+    if (v == null || v === "") return "";
+    if (v instanceof Date) return format(v, "HH:mm");
+    // Excel serial fractional time
+    if (typeof v === "number" && v < 1) {
+      const totalMin = Math.round(v * 24 * 60);
+      const h = Math.floor(totalMin / 60), m = totalMin % 60;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+    return String(v).trim();
+  };
+
+  const handleFile = async (file: File) => {
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array", cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: "" });
+      if (!json.length) { toast.error("Empty file"); return; }
+
+      // Detect header row
+      const headerRow = json[0].map((h: any) => String(h ?? "").trim().toLowerCase());
+      const hasHeader = headerRow.some(h => HEADER_MAP[h]);
+      let colMap: Record<keyof Row, number> = {
+        vehicle_number: 0, driver_mobile: 1, entry_date: 2, entry_time: 3, category: 4,
+      };
+      let dataRows = json;
+      if (hasHeader) {
+        const map: Partial<Record<keyof Row, number>> = {};
+        headerRow.forEach((h, i) => { const key = HEADER_MAP[h]; if (key && map[key] === undefined) map[key] = i; });
+        colMap = { ...colMap, ...map } as any;
+        dataRows = json.slice(1);
+      }
+
+      const out: Row[] = [];
+      for (const r of dataRows) {
+        const vn = String(r[colMap.vehicle_number] ?? "").trim();
+        if (!vn) continue;
+        const dateCell = r[colMap.entry_date];
+        const timeCell = r[colMap.entry_time];
+        const d = cellToDate(dateCell);
+        let timeStr = cellToTime(timeCell);
+        // If date cell already had time component (Date object), prefer it when time cell empty
+        if (!timeStr && d.time) timeStr = d.time;
+        out.push({
+          vehicle_number: vn.toUpperCase().replace(/\s+/g, ""),
+          driver_mobile: normalizeMobile(r[colMap.driver_mobile]),
+          entry_date: d.date,
+          entry_time: timeStr,
+          category: String(r[colMap.category] ?? "").trim(),
+        });
+      }
+
+      if (out.length === 0) { toast.error("No data rows found"); return; }
+      setRows(out);
+      setResults(null);
+      setFileName(file.name);
+      toast.success(`Loaded ${out.length} row(s) from ${file.name}`);
+    } catch (e: any) {
+      toast.error("Failed to read file: " + (e?.message || e));
+    }
+  };
+
 
   const updateRow = (i: number, patch: Partial<Row>) => {
     setRows(rs => rs.map((r, idx) => idx === i ? { ...r, ...patch } : r));
@@ -162,23 +236,25 @@ export default function ImportVehicles() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">1. Paste rows</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">1. Upload spreadsheet</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <Label className="text-xs text-muted-foreground">
-            Columns (in order): Vehicle Number, Phone Number, Entry Date, Entry Time, Wheel Category.
-            Date e.g. <code>17-Jun-26</code>, time <code>13:43</code>, category like <code>4</code>, <code>6</code>, <code>4-6</code>, <code>7-10</code>, <code>15-20</code>.
+            Upload an Excel (.xlsx, .xls) or CSV file. Expected columns: Vehicle Number, Phone Number, Entry Date, Entry Time, Wheel Category. A header row is auto-detected.
           </Label>
-          <Textarea
-            value={paste}
-            onChange={e => setPaste(e.target.value)}
-            placeholder={"HR55AD0714\t9958939901\t17-Jun-26\t13:43\t4-6\nTN23BU9318\t8973166866\t17-Jun-26\t16:28\t4"}
-            rows={6}
-            className="font-mono text-xs"
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv,.ods"
+            className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
           />
-          <div className="flex gap-2">
-            <Button onClick={handleParse}><Upload className="w-4 h-4 mr-2" />Parse</Button>
-            <Button variant="outline" onClick={() => { setRows([...rows, emptyRow()]); }}>Add empty row</Button>
-            <Button variant="ghost" onClick={() => { setPaste(""); setRows([]); setResults(null); }}>Clear</Button>
+          <div className="flex flex-wrap gap-2 items-center">
+            <Button onClick={() => fileInputRef.current?.click()}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />Choose file
+            </Button>
+            <Button variant="outline" onClick={() => setRows([...rows, emptyRow()])}>Add empty row</Button>
+            <Button variant="ghost" onClick={() => { setRows([]); setResults(null); setFileName(""); }}>Clear</Button>
+            {fileName && <span className="text-sm text-muted-foreground">{fileName}</span>}
           </div>
         </CardContent>
       </Card>
