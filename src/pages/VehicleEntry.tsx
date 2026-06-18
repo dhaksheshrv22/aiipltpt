@@ -162,7 +162,7 @@ export default function VehicleEntry() {
       num_wheels: wheels,
       pricing_category: pricing.category,
       daily_rate: hasActivePass ? 0 : pricing.dailyRate,
-      payment_mode: hasActivePass ? "Monthly Pass" : (advancePaid ? paymentMode : "Due"),
+      payment_mode: hasActivePass ? "Monthly Pass" : (paymentMode || null),
       advance_paid: !hasActivePass && advancePaid,
       advance_amount: advanceAmount,
       payment_status: finalPaymentStatus,
