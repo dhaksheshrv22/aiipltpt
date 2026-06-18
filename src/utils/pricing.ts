@@ -83,7 +83,8 @@ export function formatDuration(entryTime: Date, exitTime: Date): string {
   return parts.join(", ");
 }
 
-export function isOverstay(entryTime: Date | string): boolean {
+export function isOverstay(entryTime: Date | string, isMonthlyPass: boolean = false): boolean {
+  if (isMonthlyPass) return false;
   const entry = typeof entryTime === "string" ? new Date(entryTime) : entryTime;
   const diffHours = differenceInMilliseconds(new Date(), entry) / (1000 * 60 * 60);
   return diffHours > 168; // 7 days

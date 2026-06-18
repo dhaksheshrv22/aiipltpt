@@ -512,7 +512,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      next_receipt_number: { Args: { _prefix?: string }; Returns: string }
       next_token_number: { Args: { _prefix?: string }; Returns: string }
+      process_vehicle_exit: {
+        Args: {
+          _amount_paying: number
+          _balance_amount: number
+          _billable_days: number
+          _exit_payment_mode: string
+          _exit_time: string
+          _final_payment_status: string
+          _gross_amount: number
+          _total_hours: number
+          _vehicle_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

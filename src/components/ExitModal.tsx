@@ -73,6 +73,20 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
     setLoading(true);
     const totalHours = parseFloat(rawBill.totalHours.toFixed(2));
     const receiptNo = vehicle.token_number || generateReceiptNumber(receiptSettings.prefix);
+    const finalStatus = remainingDue > 0 ? "Partial" : "Paid";
+
+    const { data: historyId, error: rpcErr } = await supabase.rpc("process_vehicle_exit", {
+      _vehicle_id: vehicle.id,
+      _exit_time: now.toISOString(),
+      _total_hours: totalHours,
+      _billable_days: rawBill.billableDays,
+      _gross_amount: rawBill.grossAmount,
+      _balance_amount: remainingDue,
+      _exit_payment_mode: exitPaymentMode || null,
+      _amount_paying: amountPaying,
+      _final_payment_status: finalStatus,
+    });
+    if (rpcErr) { toast.error("Exit failed: " + rpcErr.message); setLoading(false); return; }
 
     const historyRow: any = {
       vehicle_number: vehicle.vehicle_number,
@@ -89,32 +103,9 @@ export default function ExitModal({ vehicle, onClose, onComplete }: ExitModalPro
       balance_amount: remainingDue,
       payment_mode: vehicle.payment_mode,
       exit_payment_mode: exitPaymentMode,
-      final_payment_status: remainingDue > 0 ? "Partial" : "Paid",
+      final_payment_status: finalStatus,
       token_number: vehicle.token_number ?? null,
     };
-
-    const { data: historyEntry, error: histErr } = await supabase.from("vehicle_history").insert(historyRow).select().single();
-    if (histErr) { toast.error("Exit failed: " + histErr.message); setLoading(false); return; }
-
-    if (amountPaying > 0) {
-      await supabase.from("payments").insert({
-        history_vehicle_id: historyEntry.id,
-        vehicle_number: vehicle.vehicle_number,
-        payment_type: "Exit",
-        amount: amountPaying,
-        payment_mode: exitPaymentMode,
-        notes: remainingDue > 0 ? `Partial — ${formatINR(remainingDue)} pending` : null,
-      });
-    }
-
-    if (ledger.length > 0) {
-      await supabase
-        .from("payments")
-        .update({ history_vehicle_id: historyEntry.id })
-        .eq("vehicle_id", vehicle.id);
-    }
-
-    await supabase.from("active_vehicles").delete().eq("id", vehicle.id);
 
     const grandTotal = totalPaidPre + amountPaying;
     setReceipt({
