@@ -363,6 +363,16 @@ export default function VehicleEntry() {
         <Card>
           <CardHeader><CardTitle className="text-lg">Payment Info</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div>
+                <Label htmlFor="advance" className="cursor-pointer">Collect 1-Day Advance</Label>
+                {advancePaid && pricing && (
+                  <p className="text-sm text-success font-medium mt-1">Advance: {formatINR(pricing.dailyRate)}</p>
+                )}
+              </div>
+              <Switch id="advance" checked={advancePaid} onCheckedChange={setAdvancePaid} />
+            </div>
+
             <div>
               <Label>Payment Mode</Label>
               <RadioGroup value={paymentMode} onValueChange={setPaymentMode} className="flex gap-4 mt-2">
@@ -373,16 +383,6 @@ export default function VehicleEntry() {
                   </div>
                 ))}
               </RadioGroup>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div>
-                <Label htmlFor="advance" className="cursor-pointer">Collect 1-Day Advance</Label>
-                {advancePaid && pricing && (
-                  <p className="text-sm text-success font-medium mt-1">Advance: {formatINR(pricing.dailyRate)}</p>
-                )}
-              </div>
-              <Switch id="advance" checked={advancePaid} onCheckedChange={setAdvancePaid} />
             </div>
 
             <div className="text-xs text-muted-foreground">
