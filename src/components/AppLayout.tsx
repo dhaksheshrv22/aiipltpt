@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useInterval } from "@/hooks/useInterval";
 import {
-  LayoutDashboard, Truck, PlusCircle, History, BarChart3, Settings, LogOut, Menu, BadgeCheck, Boxes, BookOpen, Trash2, Upload
+  LayoutDashboard, Truck, PlusCircle, History, BarChart3, Settings, LogOut, Menu, BadgeCheck, Boxes, BookOpen, Trash2
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
