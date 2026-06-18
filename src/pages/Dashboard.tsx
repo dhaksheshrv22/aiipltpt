@@ -25,8 +25,11 @@ export default function Dashboard() {
   const { data: todayRevenue = 0 } = useQuery({
     queryKey: ["todayRevenue"],
     queryFn: async () => {
-      const today = startOfDay(new Date());
-      const { data } = await supabase.from("payments").select("amount").gte("paid_at", today.toISOString());
+      const dayStart = startOfDay(new Date());
+      const dayEnd = endOfDay(new Date());
+      const { data } = await supabase.from("payments").select("amount")
+        .gte("paid_at", dayStart.toISOString())
+        .lte("paid_at", dayEnd.toISOString());
       return data?.reduce((sum, p) => sum + p.amount, 0) ?? 0;
     },
     refetchInterval: 120000,
@@ -51,22 +54,26 @@ export default function Dashboard() {
     refetchInterval: 120000,
   });
 
+  // Single query for last-7-days revenue chart (replaces 7 sequential queries)
   const { data: chartData = [] } = useQuery({
     queryKey: ["revenueChart"],
     queryFn: async () => {
       const days = 7;
-      const results = [];
+      const start = startOfDay(subDays(new Date(), days - 1));
+      const { data } = await supabase
+        .from("payments")
+        .select("amount, paid_at")
+        .gte("paid_at", start.toISOString());
+      const buckets = new Map<string, number>();
       for (let i = days - 1; i >= 0; i--) {
-        const day = subDays(new Date(), i);
-        const dayStart = startOfDay(day);
-        const dayEnd = endOfDay(day);
-        const { data } = await supabase.from("payments").select("amount").gte("paid_at", dayStart.toISOString()).lte("paid_at", dayEnd.toISOString());
-        results.push({
-          date: format(day, "dd MMM"),
-          revenue: data?.reduce((s, p) => s + p.amount, 0) ?? 0,
-        });
+        buckets.set(format(subDays(new Date(), i), "dd MMM"), 0);
       }
-      return results;
+      (data ?? []).forEach((p: any) => {
+        if (!p.paid_at) return;
+        const key = format(new Date(p.paid_at), "dd MMM");
+        if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + (p.amount ?? 0));
+      });
+      return Array.from(buckets.entries()).map(([date, revenue]) => ({ date, revenue }));
     },
     refetchInterval: 120000,
   });
@@ -131,7 +138,7 @@ export default function Dashboard() {
               <XAxis dataKey="date" className="text-xs" />
               <YAxis className="text-xs" />
               <Tooltip formatter={(v: number) => formatINR(v)} />
-              <Bar dataKey="revenue" fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

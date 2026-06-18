@@ -19,25 +19,32 @@ import ExcelJS from "exceljs";
 import Seo from "@/components/Seo";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const COLORS = ["hsl(217,91%,60%)", "hsl(142,71%,45%)", "hsl(38,92%,50%)", "hsl(0,72%,51%)", "hsl(280,60%,50%)", "hsl(180,60%,40%)"];
+const COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--destructive))", "hsl(280,60%,50%)", "hsl(180,60%,40%)"];
 
 type Payment = { amount: number; paid_at: string | null; payment_mode: string; payment_type: string; vehicle_number: string };
 type History = { entry_time: string; exit_time: string; pricing_category: string; gross_amount: number; total_hours: number | null; vehicle_number: string };
 type ActiveVeh = { vehicle_number: string; pricing_category: string; entry_time: string };
 
 export default function Reports() {
+  // Limit pulled data to last 2 years to keep Reports responsive at scale.
+  const since = useMemo(() => startOfYear(new Date(new Date().getFullYear() - 1, 0, 1)).toISOString(), []);
+
   const { data: payments = [] } = useQuery({
-    queryKey: ["reports-payments"],
+    queryKey: ["reports-payments", since],
     queryFn: async () => {
-      const { data } = await supabase.from("payments").select("amount, paid_at, payment_mode, payment_type, vehicle_number");
+      const { data } = await supabase.from("payments")
+        .select("amount, paid_at, payment_mode, payment_type, vehicle_number")
+        .gte("paid_at", since);
       return (data ?? []) as Payment[];
     },
   });
 
   const { data: history = [] } = useQuery({
-    queryKey: ["reports-history"],
+    queryKey: ["reports-history", since],
     queryFn: async () => {
-      const { data } = await supabase.from("vehicle_history").select("entry_time, exit_time, pricing_category, gross_amount, total_hours, vehicle_number");
+      const { data } = await supabase.from("vehicle_history")
+        .select("entry_time, exit_time, pricing_category, gross_amount, total_hours, vehicle_number")
+        .gte("exit_time", since);
       return (data ?? []) as History[];
     },
   });
