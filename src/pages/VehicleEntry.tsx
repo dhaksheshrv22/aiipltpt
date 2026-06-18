@@ -385,18 +385,10 @@ export default function VehicleEntry() {
               <Switch id="advance" checked={advancePaid} onCheckedChange={setAdvancePaid} />
             </div>
 
-            {!advancePaid && (
-              <div>
-                <Label>Payment Status</Label>
-                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Paid">Paid</SelectItem>
-                    <SelectItem value="Due">Due</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground">
+              Payment Status is set automatically: <b>Paid</b> when a payment mode or advance is chosen, otherwise <b>Due</b>.
+            </div>
+
 
             <div>
               <Label htmlFor="notes">Notes (optional)</Label>
@@ -417,8 +409,8 @@ export default function VehicleEntry() {
                 <span className="text-muted-foreground">Advance:</span>
                 <span>{advancePaid ? formatINR(pricing.dailyRate) : "None"}</span>
                 <span className="text-muted-foreground">Status:</span>
-                <span className={advancePaid || paymentStatus === "Paid" ? "text-success font-medium" : "text-warning font-medium"}>
-                  {advancePaid ? "Paid" : paymentStatus}
+                <span className={(advancePaid || !!paymentMode || !!activePass) ? "text-success font-medium" : "text-warning font-medium"}>
+                  {(advancePaid || !!paymentMode || !!activePass) ? "Paid" : "Due"}
                 </span>
               </div>
             </CardContent>
