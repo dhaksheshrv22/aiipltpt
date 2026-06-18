@@ -79,6 +79,7 @@ export default function EditVehicleModal({ vehicle, onClose, onSaved }: EditVehi
         payment_mode: paymentMode,
         vehicle_number: vehicleNumber.trim().toUpperCase(),
         notes: txnRef.trim() ? `Txn Ref: ${txnRef.trim()}` : null,
+        paid_at: newEntryTime.toISOString(),
       };
       if (existingAdv) {
         await supabase.from("payments").update(advancePayload).eq("id", existingAdv.id);
