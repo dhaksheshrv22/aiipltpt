@@ -29,7 +29,7 @@ export type Database = {
           monthly_pass_id: string | null
           notes: string | null
           num_wheels: number
-          payment_mode: string
+          payment_mode: string | null
           payment_status: string
           pricing_category: string
           return_time: string | null
@@ -55,7 +55,7 @@ export type Database = {
           monthly_pass_id?: string | null
           notes?: string | null
           num_wheels: number
-          payment_mode: string
+          payment_mode?: string | null
           payment_status: string
           pricing_category: string
           return_time?: string | null
@@ -81,7 +81,7 @@ export type Database = {
           monthly_pass_id?: string | null
           notes?: string | null
           num_wheels?: number
-          payment_mode?: string
+          payment_mode?: string | null
           payment_status?: string
           pricing_category?: string
           return_time?: string | null
