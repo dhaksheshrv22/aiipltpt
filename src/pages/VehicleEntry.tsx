@@ -38,6 +38,7 @@ export default function VehicleEntry() {
   const [paymentMode, setPaymentMode] = useState("");
   const [advancePaid, setAdvancePaid] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("Due");
+  const [advanceAmount, setAdvanceAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [entryToken, setEntryToken] = useState<any>(null);
   const [activePass, setActivePass] = useState<any>(null);
@@ -48,6 +49,8 @@ export default function VehicleEntry() {
   const wheels = parseInt(numWheels) || 0;
   const pricing = wheels > 0 ? getPricingDetails(wheels) : null;
   const showWheelError = numWheels !== "" && !pricing && wheels > 0;
+  const parsedAdvanceAmount = parseFloat(advanceAmount) || 0;
+  const effectiveAdvanceAmount = advancePaid && pricing ? (parsedAdvanceAmount > 0 ? parsedAdvanceAmount : pricing.dailyRate) : 0;
 
   const fillFromHistory = (s: HistorySuggestion) => {
     setVehicleNumber(s.vehicle_number);
@@ -126,6 +129,15 @@ export default function VehicleEntry() {
 
   const validateMobile = (m: string) => /^[6-9]\d{9}$/.test(m);
 
+  // Auto-fill advance amount with the daily rate when advance is turned on and field is empty/zero
+  useEffect(() => {
+    if (advancePaid && pricing) {
+      if (advanceAmount === "" || advanceAmount === "0") {
+        setAdvanceAmount(String(pricing.dailyRate));
+      }
+    }
+  }, [advancePaid, pricing]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pricing) { toast.error("Invalid wheel count"); return; }
@@ -151,10 +163,9 @@ export default function VehicleEntry() {
     }
 
     const hasActivePass = !!activePass;
-    // Auto-mark Paid if user picked a payment mode (even without toggling advance)
-    const autoPaid = !!paymentMode && !hasActivePass;
-    const finalPaymentStatus = hasActivePass ? "Paid" : (advancePaid || autoPaid ? "Paid" : paymentStatus);
-    const advanceAmount = hasActivePass ? 0 : (advancePaid ? pricing.dailyRate : 0);
+    const parsedAdvance = parseFloat(advanceAmount) || 0;
+    const effectiveAdvanceAmount = hasActivePass ? 0 : (advancePaid && parsedAdvance > 0 ? parsedAdvance : (advancePaid ? pricing.dailyRate : 0));
+    const finalPaymentStatus = hasActivePass ? "Paid" : (advancePaid ? "Paid" : paymentStatus);
 
     const { data: vehicle, error } = await supabase.from("active_vehicles").insert({
       vehicle_number: formattedVehicle,
@@ -164,7 +175,7 @@ export default function VehicleEntry() {
       daily_rate: hasActivePass ? 0 : pricing.dailyRate,
       payment_mode: hasActivePass ? "Monthly Pass" : (paymentMode || null),
       advance_paid: !hasActivePass && advancePaid,
-      advance_amount: advanceAmount,
+      advance_amount: effectiveAdvanceAmount,
       payment_status: finalPaymentStatus,
       is_monthly_pass: hasActivePass,
       monthly_pass_id: hasActivePass ? activePass.id : null,
@@ -196,7 +207,7 @@ export default function VehicleEntry() {
         vehicle_id: vehicle.id,
         vehicle_number: formattedVehicle,
         payment_type: "Advance",
-        amount: advanceAmount,
+        amount: effectiveAdvanceAmount,
         payment_mode: paymentMode,
         paid_at: vehicle.entry_time,
       }).then(({ error: pErr }) => {
@@ -215,7 +226,7 @@ export default function VehicleEntry() {
       daily_rate: pricing.dailyRate,
       entry_time: vehicle.entry_time,
       advance_paid: advancePaid,
-      advance_amount: advanceAmount,
+      advance_amount: effectiveAdvanceAmount,
       payment_mode: paymentMode,
       payment_status: finalPaymentStatus,
       token_number: tokenNumber,
@@ -371,26 +382,46 @@ export default function VehicleEntry() {
               <div>
                 <Label htmlFor="advance" className="cursor-pointer">Collect 1-Day Advance</Label>
                 {advancePaid && pricing && (
-                  <p className="text-sm text-success font-medium mt-1">Advance: {formatINR(pricing.dailyRate)}</p>
+                  <p className="text-sm text-success font-medium mt-1">Advance: {formatINR(effectiveAdvanceAmount)}</p>
                 )}
               </div>
               <Switch id="advance" checked={advancePaid} onCheckedChange={setAdvancePaid} />
             </div>
 
-            <div>
-              <Label>Payment Mode</Label>
-              <RadioGroup value={paymentMode} onValueChange={setPaymentMode} className="flex gap-4 mt-2">
-                {["Cash", "UPI", "Card"].map(m => (
-                  <div key={m} className="flex items-center space-x-2">
-                    <RadioGroupItem value={m} id={`mode-${m}`} />
-                    <Label htmlFor={`mode-${m}`} className="cursor-pointer">{m}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
+            {advancePaid && !activePass && (
+              <div>
+                <Label htmlFor="advanceAmount">Advance Amount</Label>
+                <Input
+                  id="advanceAmount"
+                  type="number"
+                  min={0}
+                  value={advanceAmount}
+                  onChange={e => setAdvanceAmount(e.target.value)}
+                  placeholder={pricing ? String(pricing.dailyRate) : "0"}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Defaults to {pricing ? formatINR(pricing.dailyRate) : "the daily rate"} if left blank or set to 0.
+                </p>
+              </div>
+            )}
+
+            {advancePaid && !activePass && (
+              <div>
+                <Label>Payment Mode</Label>
+                <RadioGroup value={paymentMode} onValueChange={setPaymentMode} className="flex gap-4 mt-2">
+                  {["Cash", "UPI", "Card"].map(m => (
+                    <div key={m} className="flex items-center space-x-2">
+                      <RadioGroupItem value={m} id={`mode-${m}`} />
+                      <Label htmlFor={`mode-${m}`} className="cursor-pointer">{m}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+            )}
 
             <div className="text-xs text-muted-foreground">
-              Payment Status is set automatically: <b>Paid</b> when a payment mode or advance is chosen, otherwise <b>Due</b>.
+              Payment Status is set automatically: <b>Paid</b> when advance is collected or a monthly pass is active, otherwise <b>Due</b>.
             </div>
 
 
@@ -411,10 +442,10 @@ export default function VehicleEntry() {
                 <span className="text-muted-foreground">Daily Rate:</span>
                 <span className="font-semibold">{formatINR(pricing.dailyRate)}</span>
                 <span className="text-muted-foreground">Advance:</span>
-                <span>{advancePaid ? formatINR(pricing.dailyRate) : "None"}</span>
+                <span>{advancePaid ? formatINR(effectiveAdvanceAmount) : "None"}</span>
                 <span className="text-muted-foreground">Status:</span>
-                <span className={(advancePaid || !!paymentMode || !!activePass) ? "text-success font-medium" : "text-warning font-medium"}>
-                  {(advancePaid || !!paymentMode || !!activePass) ? "Paid" : "Due"}
+                <span className={(advancePaid || !!activePass) ? "text-success font-medium" : "text-warning font-medium"}>
+                  {(advancePaid || !!activePass) ? "Paid" : "Due"}
                 </span>
               </div>
             </CardContent>
