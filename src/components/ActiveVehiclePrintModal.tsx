@@ -125,6 +125,9 @@ export default function ActiveVehiclePrintModal({ vehicle, onClose }: ActiveVehi
           {receiptSettings.footerText && (
             <p className="text-center text-[10px] text-muted-foreground mt-1">{receiptSettings.footerText}</p>
           )}
+          <pre className="font-mono text-[10px] italic leading-tight whitespace-pre text-foreground mt-2">
+{wrapText(DISCLAIMER, 32)}
+          </pre>
         </div>
 
         <div className="flex flex-col gap-2 no-print mt-4">
