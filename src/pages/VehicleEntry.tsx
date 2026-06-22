@@ -38,6 +38,7 @@ export default function VehicleEntry() {
   const [paymentMode, setPaymentMode] = useState("");
   const [advancePaid, setAdvancePaid] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("Due");
+  const [advanceAmount, setAdvanceAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [entryToken, setEntryToken] = useState<any>(null);
   const [activePass, setActivePass] = useState<any>(null);
