@@ -205,7 +205,7 @@ export default function VehicleEntry() {
         vehicle_id: vehicle.id,
         vehicle_number: formattedVehicle,
         payment_type: "Advance",
-        amount: advanceAmount,
+        amount: effectiveAdvanceAmount,
         payment_mode: paymentMode,
         paid_at: vehicle.entry_time,
       }).then(({ error: pErr }) => {
