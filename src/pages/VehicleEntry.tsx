@@ -226,7 +226,7 @@ export default function VehicleEntry() {
       daily_rate: pricing.dailyRate,
       entry_time: vehicle.entry_time,
       advance_paid: advancePaid,
-      advance_amount: advanceAmount,
+      advance_amount: effectiveAdvanceAmount,
       payment_mode: paymentMode,
       payment_status: finalPaymentStatus,
       token_number: tokenNumber,
