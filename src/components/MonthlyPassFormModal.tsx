@@ -4,13 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { getMonthlyPrice, generatePassId, computeExpiry } from "@/utils/monthlyPass";
+import { generatePassId, computeExpiry } from "@/utils/monthlyPass";
 import { formatINR } from "@/utils/pricing";
 import { addDays } from "date-fns";
 import { toast } from "sonner";
-import { Info, AlertCircle } from "lucide-react";
 import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 
 interface Props {
@@ -28,23 +26,17 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
   const [ownerMobile, setOwnerMobile] = useState(pass?.owner_mobile ?? "");
   const [numWheels, setNumWheels] = useState(pass?.num_wheels ? String(pass.num_wheels) : "");
   const [paymentMode, setPaymentMode] = useState("Cash");
-  const [paymentStatus, setPaymentStatus] = useState("Paid");
-  const [amountPayingStr, setAmountPayingStr] = useState("");
+  const [amountStr, setAmountStr] = useState("");
   const [loading, setLoading] = useState(false);
 
   const wheels = parseInt(numWheels) || 0;
-  const pricing = wheels > 0 ? getMonthlyPrice(wheels) : null;
+  const amount = Math.max(0, parseFloat(amountStr) || 0);
   const validMobile = /^[6-9]\d{9}$/.test(ownerMobile);
-  const showWheelError = numWheels !== "" && !pricing;
-  const monthlyAmount = pricing?.monthlyAmount ?? 0;
-  const amountPaying = amountPayingStr === ""
-    ? (paymentStatus === "Paid" ? monthlyAmount : 0)
-    : Math.max(0, Math.min(monthlyAmount, parseFloat(amountPayingStr) || 0));
-  const remainingDue = Math.max(0, monthlyAmount - amountPaying);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pricing) return toast.error("Invalid wheel count");
+    if (wheels <= 0) return toast.error("Enter number of wheels");
+    if (amount <= 0) return toast.error("Enter pass amount");
     if (!validMobile) return toast.error("Enter valid 10-digit mobile starting with 6-9");
 
     const formattedVehicle = vehicleNumber.toUpperCase().trim();
@@ -52,18 +44,16 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
 
     setLoading(true);
 
-    const effectiveStatus = amountPaying >= monthlyAmount ? "Paid" : (amountPaying > 0 ? "Partial" : "Due");
-
     if (isRenew && pass) {
       const base = new Date(pass.pass_expiry_date) > new Date() ? new Date(pass.pass_expiry_date) : new Date();
       const newExpiry = addDays(base, 30);
       const { data, error } = await supabase.from("monthly_passes").update({
         pass_expiry_date: newExpiry.toISOString(),
         num_wheels: wheels,
-        pricing_category: pricing.category,
-        daily_rate: pricing.dailyRate,
-        amount: pricing.monthlyAmount,
-        payment_status: effectiveStatus,
+        pricing_category: "Manual",
+        daily_rate: 0,
+        amount: amount,
+        payment_status: "Paid",
         payment_mode: paymentMode,
         owner_name: ownerName || null,
         owner_mobile: ownerMobile,
@@ -71,22 +61,19 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
       }).eq("id", pass.id).select().single();
       if (error) { toast.error(error.message); setLoading(false); return; }
 
-      if (amountPaying > 0) {
-        await supabase.from("payments").insert({
-          vehicle_number: formattedVehicle,
-          payment_type: "Monthly Pass Renewal",
-          amount: amountPaying,
-          payment_mode: paymentMode,
-          notes: `Pass ${pass.pass_id} renewed${remainingDue > 0 ? ` — ${formatINR(remainingDue)} pending` : ""}`,
-        });
-      }
+      await supabase.from("payments").insert({
+        vehicle_number: formattedVehicle,
+        payment_type: "Monthly Pass Renewal",
+        amount: amount,
+        payment_mode: paymentMode,
+        notes: `Pass ${pass.pass_id} renewed`,
+      });
       toast.success("Pass renewed");
       setLoading(false);
       onSuccess(data);
       return;
     }
 
-    // Create: ensure no active duplicate
     const { data: existing } = await supabase
       .from("monthly_passes")
       .select("id")
@@ -108,29 +95,27 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
       owner_name: ownerName || null,
       owner_mobile: ownerMobile,
       num_wheels: wheels,
-      pricing_category: pricing.category,
-      daily_rate: pricing.dailyRate,
-      amount: pricing.monthlyAmount,
+      pricing_category: "Manual",
+      daily_rate: 0,
+      amount: amount,
       pass_start_date: start.toISOString(),
       pass_expiry_date: expiry.toISOString(),
-      payment_status: effectiveStatus,
+      payment_status: "Paid",
       payment_mode: paymentMode,
       is_active: true,
     }).select().single();
 
     if (error) { toast.error(error.message); setLoading(false); return; }
 
-    if (amountPaying > 0) {
-      await supabase.from("payments").insert({
-        vehicle_number: formattedVehicle,
-        payment_type: "Monthly Pass",
-        amount: amountPaying,
-        payment_mode: paymentMode,
-        notes: `Pass ${passId} issued${remainingDue > 0 ? ` — ${formatINR(remainingDue)} pending` : ""}`,
-      });
-    }
+    await supabase.from("payments").insert({
+      vehicle_number: formattedVehicle,
+      payment_type: "Monthly Pass",
+      amount: amount,
+      payment_mode: paymentMode,
+      notes: `Pass ${passId} issued`,
+    });
 
-    toast.success(`Monthly pass ${passId} created`);
+    toast.success(`Monthly pass ${passId} created — ${formatINR(amount)} paid`);
     setLoading(false);
     onSuccess(data);
   };
@@ -171,19 +156,26 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
           </div>
           <div>
             <Label>Number of Wheels</Label>
-            <Input type="number" min={2} value={numWheels} onChange={e => setNumWheels(e.target.value)} required />
-            {pricing && (
-              <div className="mt-2 p-2 bg-primary/10 border border-primary/20 rounded text-sm flex items-center gap-2">
-                <Info className="w-4 h-4 text-primary" />
-                {pricing.category} • {formatINR(pricing.dailyRate)}/day • <strong>{formatINR(pricing.monthlyAmount)}/month</strong>
-              </div>
-            )}
-            {showWheelError && (
-              <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-destructive" />
-                Invalid wheel count
-              </div>
-            )}
+            <Input
+              type="number"
+              min={2}
+              value={numWheels}
+              onChange={e => setNumWheels(e.target.value)}
+              placeholder="e.g. 16"
+              required
+            />
+          </div>
+          <div>
+            <Label>Pass Amount (₹)</Label>
+            <Input
+              type="number"
+              min={1}
+              step="1"
+              value={amountStr}
+              onChange={e => setAmountStr(e.target.value)}
+              placeholder="Enter amount"
+              required
+            />
           </div>
           <div>
             <Label>Payment Mode</Label>
@@ -196,37 +188,9 @@ export default function MonthlyPassFormModal({ mode, pass, onClose, onSuccess }:
               ))}
             </RadioGroup>
           </div>
-          <div>
-            <Label>Amount Paying Now</Label>
-            <Input
-              type="number"
-              min={0}
-              max={monthlyAmount || undefined}
-              step="1"
-              value={amountPayingStr}
-              onChange={e => setAmountPayingStr(e.target.value)}
-              placeholder={monthlyAmount ? String(monthlyAmount) : "0"}
-              className="mt-1"
-            />
-            {pricing && (
-              <div className="flex gap-2 mt-2 text-xs">
-                <Button type="button" size="sm" variant="outline" onClick={() => setAmountPayingStr(String(monthlyAmount))}>
-                  Full {formatINR(monthlyAmount)}
-                </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => setAmountPayingStr(String(Math.round(monthlyAmount / 2)))}>Half</Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => setAmountPayingStr("0")}>Due (0)</Button>
-              </div>
-            )}
-            {pricing && (
-              <p className="text-xs mt-2">
-                Status: <strong>{amountPaying >= monthlyAmount ? "Paid" : amountPaying > 0 ? "Partial" : "Due"}</strong>
-                {remainingDue > 0 && <span className="text-warning"> • Pending {formatINR(remainingDue)}</span>}
-              </p>
-            )}
-          </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-            <Button type="submit" disabled={loading || !pricing} className="flex-1">
+            <Button type="submit" disabled={loading} className="flex-1">
               {loading ? "Saving..." : isRenew ? "Renew Pass" : "Create Pass"}
             </Button>
           </div>
