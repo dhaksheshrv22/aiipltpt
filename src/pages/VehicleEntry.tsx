@@ -49,6 +49,8 @@ export default function VehicleEntry() {
   const wheels = parseInt(numWheels) || 0;
   const pricing = wheels > 0 ? getPricingDetails(wheels) : null;
   const showWheelError = numWheels !== "" && !pricing && wheels > 0;
+  const parsedAdvanceAmount = parseFloat(advanceAmount) || 0;
+  const effectiveAdvanceAmount = advancePaid && pricing ? (parsedAdvanceAmount > 0 ? parsedAdvanceAmount : pricing.dailyRate) : 0;
 
   const fillFromHistory = (s: HistorySuggestion) => {
     setVehicleNumber(s.vehicle_number);
