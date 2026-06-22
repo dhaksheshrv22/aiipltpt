@@ -173,7 +173,7 @@ export default function VehicleEntry() {
       daily_rate: hasActivePass ? 0 : pricing.dailyRate,
       payment_mode: hasActivePass ? "Monthly Pass" : (paymentMode || null),
       advance_paid: !hasActivePass && advancePaid,
-      advance_amount: advanceAmount,
+      advance_amount: effectiveAdvanceAmount,
       payment_status: finalPaymentStatus,
       is_monthly_pass: hasActivePass,
       monthly_pass_id: hasActivePass ? activePass.id : null,
