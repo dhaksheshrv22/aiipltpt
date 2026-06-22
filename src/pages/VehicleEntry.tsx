@@ -382,26 +382,46 @@ export default function VehicleEntry() {
               <div>
                 <Label htmlFor="advance" className="cursor-pointer">Collect 1-Day Advance</Label>
                 {advancePaid && pricing && (
-                  <p className="text-sm text-success font-medium mt-1">Advance: {formatINR(pricing.dailyRate)}</p>
+                  <p className="text-sm text-success font-medium mt-1">Advance: {formatINR(effectiveAdvanceAmount)}</p>
                 )}
               </div>
               <Switch id="advance" checked={advancePaid} onCheckedChange={setAdvancePaid} />
             </div>
 
-            <div>
-              <Label>Payment Mode</Label>
-              <RadioGroup value={paymentMode} onValueChange={setPaymentMode} className="flex gap-4 mt-2">
-                {["Cash", "UPI", "Card"].map(m => (
-                  <div key={m} className="flex items-center space-x-2">
-                    <RadioGroupItem value={m} id={`mode-${m}`} />
-                    <Label htmlFor={`mode-${m}`} className="cursor-pointer">{m}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
+            {advancePaid && !activePass && (
+              <div>
+                <Label htmlFor="advanceAmount">Advance Amount</Label>
+                <Input
+                  id="advanceAmount"
+                  type="number"
+                  min={0}
+                  value={advanceAmount}
+                  onChange={e => setAdvanceAmount(e.target.value)}
+                  placeholder={pricing ? String(pricing.dailyRate) : "0"}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Defaults to {pricing ? formatINR(pricing.dailyRate) : "the daily rate"} if left blank or set to 0.
+                </p>
+              </div>
+            )}
+
+            {advancePaid && !activePass && (
+              <div>
+                <Label>Payment Mode</Label>
+                <RadioGroup value={paymentMode} onValueChange={setPaymentMode} className="flex gap-4 mt-2">
+                  {["Cash", "UPI", "Card"].map(m => (
+                    <div key={m} className="flex items-center space-x-2">
+                      <RadioGroupItem value={m} id={`mode-${m}`} />
+                      <Label htmlFor={`mode-${m}`} className="cursor-pointer">{m}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+            )}
 
             <div className="text-xs text-muted-foreground">
-              Payment Status is set automatically: <b>Paid</b> when a payment mode or advance is chosen, otherwise <b>Due</b>.
+              Payment Status is set automatically: <b>Paid</b> when advance is collected or a monthly pass is active, otherwise <b>Due</b>.
             </div>
 
 
