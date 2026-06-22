@@ -24,6 +24,24 @@ interface EntryTokenModalProps {
 }
 
 const DASH = "--------------------------------";
+const DISCLAIMER = "Management is not responsible for the vehicle or any goods left inside.";
+
+function wrapText(text: string, width: number): string {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    if ((current + " " + word).trim().length > width) {
+      lines.push(current.trim());
+      current = word;
+    } else {
+      current = (current + " " + word).trim();
+    }
+  }
+  if (current) lines.push(current);
+  return lines.join("\n");
+}
+
 
 export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalProps) {
   const [printing, setPrinting] = useState(false);
@@ -59,7 +77,8 @@ export default function EntryTokenModal({ vehicle, onClose }: EntryTokenModalPro
   };
 
   const Copy = ({ label, footer1, footer2 }: { label: string; footer1: string; footer2: string }) => (
-    <pre className="font-mono text-[12px] leading-tight whitespace-pre text-foreground m-0">
+    <>
+      <pre className="font-mono text-[12px] leading-tight whitespace-pre text-foreground m-0">
 {`        AIIPL TRUCK PARKING
 
 ${DASH}
@@ -84,8 +103,13 @@ ${DASH}
          ${footer1}
          ${footer2}
 ${DASH}`}
-    </pre>
+      </pre>
+      <pre className="font-mono text-[10px] italic leading-tight whitespace-pre text-foreground mt-1">
+{wrapText(DISCLAIMER, 32)}
+      </pre>
+    </>
   );
+
 
   return (
     <Dialog open onOpenChange={onClose}>

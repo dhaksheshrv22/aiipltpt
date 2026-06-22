@@ -48,6 +48,25 @@ function textToBytes(text: string): Uint8Array {
   return new TextEncoder().encode(text);
 }
 
+const DISCLAIMER_TEXT = "Management is not responsible for the vehicle or any goods left inside.";
+
+function wrapText(text: string, width: number): string {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    if ((current + " " + word).trim().length > width) {
+      lines.push(current.trim());
+      current = word;
+    } else {
+      current = (current + " " + word).trim();
+    }
+  }
+  if (current) lines.push(current);
+  return lines.join("\n");
+}
+
+
 function dashedLine(): Uint8Array {
   return textToBytes("--------------------------------\n");
 }
@@ -305,16 +324,24 @@ export async function printEntryToken(vehicle: {
 
     const barcode = new Uint8Array();
 
+    const disclaimerLines = wrapText(DISCLAIMER_TEXT, 32)
+      .split("\n")
+      .map(line => textToBytes(`${line}\n`));
+
     const footer = concatBytes(
       COMMANDS.CENTER,
       COMMANDS.MEDIUM,
       textToBytes(copyLabel === "CUSTOMER COPY" ? "KEEP TOKEN SAFE\n" : "OFFICE RECORD\n"),
       textToBytes(copyLabel === "CUSTOMER COPY" ? "Required at exit\n" : "File for records\n"),
       COMMANDS.NORMAL_SIZE,
+      COMMANDS.BOLD_ON,
+      ...disclaimerLines,
+      COMMANDS.BOLD_OFF,
       dashedLine(),
       COMMANDS.FEED,
       COMMANDS.CUT,
     );
+
 
     return [header, barcode, footer];
   };
