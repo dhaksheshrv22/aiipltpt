@@ -1,5 +1,6 @@
 import { addDays, differenceInDays } from "date-fns";
 import { getPricingDetails } from "./pricing";
+import { supabase } from "@/integrations/supabase/client";
 
 export const MONTHLY_DAYS = 30;
 export const MONTHLY_DISCOUNT = 0.2; // 20% discount on monthly pass
@@ -11,10 +12,20 @@ export function getMonthlyPrice(numWheels: number) {
   return { ...p, monthlyAmount };
 }
 
-export function generatePassId(prefix: string = "AIIPL") {
+// Format: AIIPL-YEAR-MP-0000 (sequential per year)
+export async function generatePassId(prefix: string = "AIIPL") {
   const year = new Date().getFullYear();
-  const serial = Math.floor(1000 + Math.random() * 9000);
-  return `${prefix}-MP-${year}-${String(serial).padStart(4, "0")}`;
+  const pattern = `${prefix}-${year}-MP-%`;
+  const { data } = await supabase
+    .from("monthly_passes")
+    .select("pass_id")
+    .like("pass_id", pattern);
+  const maxSeq = (data ?? []).reduce((m, r: any) => {
+    const match = /-MP-(\d+)$/.exec(r.pass_id || "");
+    const n = match ? parseInt(match[1], 10) : 0;
+    return n > m ? n : m;
+  }, 0);
+  return `${prefix}-${year}-MP-${String(maxSeq + 1).padStart(4, "0")}`;
 }
 
 export function getPassStatus(expiry: string | Date): "Active" | "Expired" {
