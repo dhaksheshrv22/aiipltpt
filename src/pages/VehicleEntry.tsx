@@ -127,6 +127,15 @@ export default function VehicleEntry() {
 
   const validateMobile = (m: string) => /^[6-9]\d{9}$/.test(m);
 
+  // Auto-fill advance amount with the daily rate when advance is turned on and field is empty/zero
+  useEffect(() => {
+    if (advancePaid && pricing) {
+      if (advanceAmount === "" || advanceAmount === "0") {
+        setAdvanceAmount(String(pricing.dailyRate));
+      }
+    }
+  }, [advancePaid, pricing]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pricing) { toast.error("Invalid wheel count"); return; }
