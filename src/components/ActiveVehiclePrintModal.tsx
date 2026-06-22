@@ -7,6 +7,25 @@ import { useReceiptSettings } from "@/hooks/useReceiptSettings";
 import { toast } from "sonner";
 import { Bluetooth, Printer, X } from "lucide-react";
 
+const DISCLAIMER = "Management is not responsible for the vehicle or any goods left inside.";
+
+function wrapText(text: string, width: number): string {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    if ((current + " " + word).trim().length > width) {
+      lines.push(current.trim());
+      current = word;
+    } else {
+      current = (current + " " + word).trim();
+    }
+  }
+  if (current) lines.push(current);
+  return lines.join("\n");
+}
+
+
 interface ActiveVehiclePrintModalProps {
   vehicle: {
     vehicle_number: string;
