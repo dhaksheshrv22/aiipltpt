@@ -48,7 +48,7 @@ function textToBytes(text: string): Uint8Array {
   return new TextEncoder().encode(text);
 }
 
-const DISCLAIMER_TEXT = "Management is not responsible for the vehicle or any goods left inside.";
+const DISCLAIMER_TEXT = "Management is not responsible for any damage to vehicles or goods. Vehicle owners or drivers are solely responsible for their valuable goods and property.";
 
 function wrapText(text: string, width: number): string {
   const words = text.split(" ");
