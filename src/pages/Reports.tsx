@@ -379,11 +379,14 @@ function OutstandingDuesReport() {
   const { data: paidByVehicle = {} } = useQuery({
     queryKey: ["outstandingDuesPayments"],
     queryFn: async () => {
-      const { data } = await supabase.from("payments").select("vehicle_id, amount").not("vehicle_id", "is", null);
+      const rows = await fetchAllPaged<any>((from, to) =>
+        supabase.from("payments").select("vehicle_id, amount").not("vehicle_id", "is", null).range(from, to)
+      );
       const map: Record<string, number> = {};
-      (data ?? []).forEach((p: any) => { map[p.vehicle_id] = (map[p.vehicle_id] ?? 0) + (p.amount ?? 0); });
+      rows.forEach((p: any) => { map[p.vehicle_id] = (map[p.vehicle_id] ?? 0) + (p.amount ?? 0); });
       return map;
     },
+
     refetchInterval: 60_000,
   });
 
