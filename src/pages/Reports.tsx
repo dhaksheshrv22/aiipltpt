@@ -25,29 +25,52 @@ type Payment = { amount: number; paid_at: string | null; payment_mode: string; p
 type History = { entry_time: string; exit_time: string; pricing_category: string; gross_amount: number; total_hours: number | null; vehicle_number: string };
 type ActiveVeh = { vehicle_number: string; pricing_category: string; entry_time: string };
 
+// Fetch all rows in pages — the backend caps a single request at 1000 rows,
+// which previously truncated recent payments/history out of the reports.
+async function fetchAllPaged<T>(
+  build: (from: number, to: number) => any,
+  pageSize = 1000,
+): Promise<T[]> {
+  const all: T[] = [];
+  for (let page = 0; page < 50; page++) {
+    const from = page * pageSize;
+    const { data, error } = await build(from, from + pageSize - 1);
+    if (error) break;
+    const rows = (data ?? []) as T[];
+    all.push(...rows);
+    if (rows.length < pageSize) break;
+  }
+  return all;
+}
+
 export default function Reports() {
   // Limit pulled data to last 2 years to keep Reports responsive at scale.
   const since = useMemo(() => startOfYear(new Date(new Date().getFullYear() - 1, 0, 1)).toISOString(), []);
 
   const { data: payments = [] } = useQuery({
     queryKey: ["reports-payments", since],
-    queryFn: async () => {
-      const { data } = await supabase.from("payments")
-        .select("amount, paid_at, payment_mode, payment_type, vehicle_number")
-        .gte("paid_at", since);
-      return (data ?? []) as Payment[];
-    },
+    queryFn: () =>
+      fetchAllPaged<Payment>((from, to) =>
+        supabase.from("payments")
+          .select("amount, paid_at, payment_mode, payment_type, vehicle_number")
+          .gte("paid_at", since)
+          .order("paid_at", { ascending: false })
+          .range(from, to)
+      ),
   });
 
   const { data: history = [] } = useQuery({
     queryKey: ["reports-history", since],
-    queryFn: async () => {
-      const { data } = await supabase.from("vehicle_history")
-        .select("entry_time, exit_time, pricing_category, gross_amount, total_hours, vehicle_number")
-        .gte("exit_time", since);
-      return (data ?? []) as History[];
-    },
+    queryFn: () =>
+      fetchAllPaged<History>((from, to) =>
+        supabase.from("vehicle_history")
+          .select("entry_time, exit_time, pricing_category, gross_amount, total_hours, vehicle_number")
+          .gte("exit_time", since)
+          .order("exit_time", { ascending: false })
+          .range(from, to)
+      ),
   });
+
 
   const { data: active = [] } = useQuery({
     queryKey: ["reports-active"],
@@ -356,11 +379,14 @@ function OutstandingDuesReport() {
   const { data: paidByVehicle = {} } = useQuery({
     queryKey: ["outstandingDuesPayments"],
     queryFn: async () => {
-      const { data } = await supabase.from("payments").select("vehicle_id, amount").not("vehicle_id", "is", null);
+      const rows = await fetchAllPaged<any>((from, to) =>
+        supabase.from("payments").select("vehicle_id, amount").not("vehicle_id", "is", null).range(from, to)
+      );
       const map: Record<string, number> = {};
-      (data ?? []).forEach((p: any) => { map[p.vehicle_id] = (map[p.vehicle_id] ?? 0) + (p.amount ?? 0); });
+      rows.forEach((p: any) => { map[p.vehicle_id] = (map[p.vehicle_id] ?? 0) + (p.amount ?? 0); });
       return map;
     },
+
     refetchInterval: 60_000,
   });
 
